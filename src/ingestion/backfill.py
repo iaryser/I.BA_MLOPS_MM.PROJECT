@@ -107,7 +107,7 @@ def main() -> None:
 
     chunks = build_chunks(starting_date, ending_date)
 
-    coin_ids = get_coin_ids(5)
+    coin_ids = get_coin_ids(number_of_coins=5)
 
     for coin_id in coin_ids:
         url = build_url(coin_id)
@@ -117,8 +117,6 @@ def main() -> None:
 
             data = fetch_coin_data(url, params, n_retries=5)
 
-            time.sleep(10)  # trying to avoid rate limit
-
             with open(
                 f"data/raw/backfill/{coin_id}_{chunk_start:%Y.%m.%d.}_{chunk_end:%Y.%m.%d.}.json",
                 "w",
@@ -126,6 +124,8 @@ def main() -> None:
                 json.dump(data, f, indent=2)
 
         print(f"Successfully fetched 1 year of hourly historical data for {coin_id}.")
+    
+    print(f"Successfully fetched hourly data of the last year for {len(coin_ids)}")
         
 
 if __name__ == "__main__":
