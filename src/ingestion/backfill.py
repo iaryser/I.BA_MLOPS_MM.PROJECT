@@ -1,10 +1,13 @@
 import json
 import os
+from dotenv import load_dotenv
 import time
 from datetime import UTC, datetime, timedelta
 
 import requests
 from requests.exceptions import HTTPError
+
+load_dotenv()
 
 API_KEY = os.getenv("COINGECKO_API_KEY")
 
