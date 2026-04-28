@@ -13,14 +13,12 @@ API_KEY = os.getenv("COINGECKO_API_KEY")
 if not API_KEY:
     raise RuntimeError("COINGECKO_API_KEY not set")
 
-
 BASE_URL = "https://api.coingecko.com/api/v3/coins"
 ENDPOINT = "market_chart/range"
 headers = {"x-cg-demo-api-key": API_KEY}
 
-RAW_BACKFILL_DIR = Path("data/raw/backfill")
-
-BACKFILL_DAYS = 365
+RAW_BACKFILL_DIR = Path("data/raw/hourly")
+SYNC_DAYS = 2
 
 
 @click.command()
@@ -33,37 +31,34 @@ def main(n_coins: int, currency: str) -> None:
 
     client = CoinGeckoClient(base_url=BASE_URL, endpoint=ENDPOINT)
     
-    ending_date = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
-    starting_date = ending_date - timedelta(days=BACKFILL_DAYS)
-
-    chunks = client.build_chunks(starting_date, ending_date)
+    ending_date = datetime.now(UTC)
+    starting_date = ending_date - timedelta(days=SYNC_DAYS)
 
     coin_ids = client.get_coin_ids(number_of_coins=n_coins)
 
     for coin_id in coin_ids:
         url = client.build_url(coin_id)
 
-        for chunk_start, chunk_end in chunks:
-            
-            params = client.build_params(
-                vs_currency=currency,
-                starting_date=chunk_start, 
-                ending_date=chunk_end
-                )
+        params = client.build_params(
+            vs_currency=currency, 
+            starting_date=starting_date, 
+            ending_date=ending_date
+            )
 
-            data = client.fetch_coin_data(url, params, headers)
+        data = client.fetch_coin_data(url, params, headers)
             
-            file_path = RAW_BACKFILL_DIR / (
-                f"{coin_id}_{chunk_start:%Y.%m.%d}_{chunk_end:%Y.%m.%d}.json"
-                )
+        file_path = RAW_BACKFILL_DIR / (
+            f"{coin_id}_{starting_date:%Y.%m.%d}_{ending_date:%Y.%m.%d}.json"
+            )
             
-            with open(file_path,"w",) as f:
-                json.dump(data, f, indent=2)
+        with open(file_path,"w",) as f:
+            json.dump(data, f, indent=2)
 
-        print(f"Successfully fetched 1 year of hourly historical data for {coin_id}.")
+        print(f"Successfully fetched two days of hourly historical data for {coin_id}.")
     
-    print(f"Successfully fetched hourly data of the last year for {len(coin_ids)} crypto-coins")
+    print(f"Successfully fetched hourly data of the two days for {len(coin_ids)} crypto-coins")
         
 
 if __name__ == "__main__":
     main()
+
