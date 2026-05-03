@@ -1,6 +1,10 @@
 import json
+from pathlib import Path
 
 import requests
+
+FILEPATH = Path("data/raw/market_snapshot")
+FILEPATH.mkdir(parents=True, exist_ok=True)
 
 URL = "https://api.coingecko.com/api/v3/coins/markets"
 
@@ -25,5 +29,5 @@ for coin in data:
         "rank": coin["market_cap_rank"],
     }
 
-with open("data/raw/market_snapshot/top100_coins.json", "w") as f:
+with open(FILEPATH / "top100_coins.json", "w") as f:
     json.dump(coin_dict, f, indent=2)
