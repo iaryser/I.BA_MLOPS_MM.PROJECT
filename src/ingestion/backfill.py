@@ -2,6 +2,7 @@ import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from tqdm import tqdm
 
 import click
 from coingecko_client import CoinGeckoClient
@@ -24,7 +25,7 @@ BACKFILL_DAYS = 365
 
 
 @click.command()
-@click.option("--n-coins", default=5, show_default=True, type=int, help="Number of Coins to extract Data from")
+@click.option("--n-coins", default=100, show_default=True, type=int, help="Number of Coins to extract Data from")
 @click.option("--currency", default="chf", show_default=True, type=str, help="Currency of Coin-Data")
 
 
@@ -40,7 +41,7 @@ def main(n_coins: int, currency: str) -> None:
 
     coin_ids = client.get_coin_ids(number_of_coins=n_coins)
 
-    for coin_id in coin_ids:
+    for coin_id in tqdm(coin_ids, total=len(coin_ids), desc="Backfilling coin data"):
         url = client.build_url(coin_id)
 
         for chunk_start, chunk_end in chunks:
@@ -51,7 +52,15 @@ def main(n_coins: int, currency: str) -> None:
                 ending_date=chunk_end
                 )
 
-            data = client.fetch_coin_data(url, params, headers)
+            try:
+                data = client.fetch_coin_data(url, params, headers)
+            except RuntimeError as e:
+                print(
+                    f"Could not fetch data for {coin_id}. "
+                    f"in interval {chunk_start:%Y-%m-%d} to {chunk_end:%Y-%m-%d}. "
+                    f"cause: {e}"
+                )
+                continue
             
             file_path = RAW_BACKFILL_DIR / (
                 f"{coin_id}_{chunk_start:%Y.%m.%d}_{chunk_end:%Y.%m.%d}.json"
@@ -59,8 +68,6 @@ def main(n_coins: int, currency: str) -> None:
             
             with open(file_path,"w",) as f:
                 json.dump(data, f, indent=2)
-
-        print(f"Successfully fetched 1 year of hourly historical data for {coin_id}.")
     
     print(f"Successfully fetched hourly data of the last year for {len(coin_ids)} crypto-coins")
         

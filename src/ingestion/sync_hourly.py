@@ -2,6 +2,7 @@ import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from tqdm import tqdm
 
 import click
 from coingecko_client import CoinGeckoClient
@@ -22,7 +23,7 @@ SYNC_DAYS = 2
 
 
 @click.command()
-@click.option("--n-coins", default=5, show_default=True, type=int, help="Number of Coins to extract Data from")
+@click.option("--n-coins", default=100, show_default=True, type=int, help="Number of Coins to extract Data from")
 @click.option("--currency", default="chf", show_default=True, type=str, help="Currency of Coin-Data")
 
 
@@ -36,7 +37,7 @@ def main(n_coins: int, currency: str) -> None:
 
     coin_ids = client.get_coin_ids(number_of_coins=n_coins)
 
-    for coin_id in coin_ids:
+    for coin_id in tqdm(coin_ids, total=len(coin_ids), desc="Syncing Coin data from the last two days"):
         url = client.build_url(coin_id)
 
         params = client.build_params(
@@ -44,17 +45,20 @@ def main(n_coins: int, currency: str) -> None:
             starting_date=starting_date, 
             ending_date=ending_date
             )
-
-        data = client.fetch_coin_data(url, params, headers)
-            
+        
+        try:
+            data = client.fetch_coin_data(url, params, headers)
+        except RuntimeError as e:
+            print(f"Could not fetch data for {coin_id}, cause: {e}")
+            continue
+        
         file_path = RAW_BACKFILL_DIR / (
             f"{coin_id}_{starting_date:%Y.%m.%d}_{ending_date:%Y.%m.%d}.json"
             )
             
         with open(file_path,"w",) as f:
             json.dump(data, f, indent=2)
-
-        print(f"Successfully fetched two days of hourly historical data for {coin_id}.")
+            
     
     print(f"Successfully fetched hourly data of the two days for {len(coin_ids)} crypto-coins")
         
