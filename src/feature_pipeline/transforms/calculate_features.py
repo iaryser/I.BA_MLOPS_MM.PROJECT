@@ -1,6 +1,6 @@
 import pandas as pd 
 from pathlib import Path
-from feature_builder import FeatureBuilder
+from feature_pipeline.transforms.feature_builder import FeatureBuilder
 
 DATA_PATH = Path("data/staging/market_data.parquet")
 OUTPUT_PATH = Path("data/aggregated/feature_data.parquet")

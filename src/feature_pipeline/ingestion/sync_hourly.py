@@ -5,7 +5,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 import click
-from coingecko_client import CoinGeckoClient
+from feature_pipeline.ingestion.coingecko_client import CoinGeckoClient
 from dotenv import load_dotenv
 
 load_dotenv()
