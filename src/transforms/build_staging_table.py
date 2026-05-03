@@ -22,7 +22,18 @@ def transform_json_to_rows(directory: Path) -> list[dict[str]]:
         m_caps = data["market_caps"]
         volumes= data["total_volumes"]
         
-        for i in range(len(prices)):
+        if not prices or not m_caps or not volumes:
+            print(
+                f"Skipping {file.name}: "   
+                f"prices={len(prices)}, "
+                f"market_caps={len(m_caps)}, "
+                f"volumes={len(volumes)}"
+            )
+            continue
+        
+        min_len = min(len(prices), len(m_caps), len(volumes))
+        
+        for i in range(min_len):
             rows.append({
                 "coin_id": coin_id,
                 "timestamp": datetime.fromtimestamp(prices[i][0] / 1000, UTC).replace(
