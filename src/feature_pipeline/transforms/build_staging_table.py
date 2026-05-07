@@ -46,8 +46,34 @@ def transform_json_to_rows(directory: Path) -> list[dict[str]]:
             })
             
     return rows
-            
-            
+
+
+def add_missing_hourly_rows(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.sort_values(["coin_id", "timestamp"]).copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+
+    completed = []
+
+    for coin_id, group in df.groupby("coin_id"):
+        group = group.set_index("timestamp").sort_index()
+
+        full_index = pd.date_range(
+            start=group.index.min(),
+            end=group.index.max(),
+            freq="1h",
+            tz="UTC",
+        )
+
+        group = group.reindex(full_index)
+        group.index.name = "timestamp"
+        group["coin_id"] = coin_id
+
+        completed.append(group.reset_index())
+
+    return pd.concat(completed, ignore_index=True)
+
+
+
 def load_market_data(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
@@ -71,9 +97,9 @@ def main() -> None:
         subset=["coin_id", "timestamp"],
         keep="last"
         )
-    market_df = market_df.sort_values(["coin_id", "timestamp"])
     
-    
+    market_df = add_missing_hourly_rows(market_df)
+        
     market_df.to_parquet(DATA_PATH, index=False)
     
     
