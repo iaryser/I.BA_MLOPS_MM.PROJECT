@@ -212,5 +212,5 @@ wandb/
 artifacts/
 
 # Local model artifacts
-models/*.joblib
-models/*.pkl
+*.joblib
+*.pkl
