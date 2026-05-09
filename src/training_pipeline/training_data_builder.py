@@ -3,7 +3,12 @@ import pandas as pd
 
 class TrainingDataBuilder:
     
-    def filter_df_on_valid_coins(self, feature_df: pd.DataFrame, min_datapoints_per_coin: int) -> pd.DataFrame:
+    def filter_df_on_valid_coins(
+        self,
+        feature_df: pd.DataFrame,
+        min_datapoints_per_coin: int
+    ) -> pd.DataFrame:
+        
         valid_coins = []
         
         df = feature_df
@@ -19,26 +24,22 @@ class TrainingDataBuilder:
         return df
     
 
-    def split_time_series_data(
+    def split_by_time(
         self,
-        feature_df: pd.DataFrame,
-        target_var: pd.Series,
-        train_size: float = 0.7,
-        val_size: float = 0.15,) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series, pd.DataFrame, pd.Series,]:
-        
-        X = feature_df
-        y = target_var
-        
-        train_end = int(len(X) * train_size)
-        val_end = int(len(X) * (train_size + val_size))
-        
-        X_train = X.iloc[:train_end, :]
-        y_train = y.iloc[:train_end]
-        
-        X_val = X.iloc[train_end:val_end, :]
-        y_val = y.iloc[train_end:val_end]
-        
-        X_test = X.iloc[val_end:, :]
-        y_test = y.iloc[val_end:]
-        
-        return X_train, y_train, X_val, y_val, X_test, y_test
+        df: pd.DataFrame,
+        train_size: float = 0.85,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+
+        df = df.sort_values(["timestamp", "coin_id"]).copy()
+
+        timestamps = df["timestamp"].sort_values().unique()
+
+        train_end = int(len(timestamps) * train_size)
+
+        train_timestamps = timestamps[:train_end]
+        test_timestamps = timestamps[train_end:]
+
+        train_df = df[df["timestamp"].isin(train_timestamps)]
+        test_df = df[df["timestamp"].isin(test_timestamps)]
+
+        return train_df, test_df
