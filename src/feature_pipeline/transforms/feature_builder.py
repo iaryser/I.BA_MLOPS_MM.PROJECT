@@ -3,8 +3,9 @@ import numpy as np
 
 class FeatureBuilder:
     
-    def __init__(self, future_horizon: int) -> None:
+    def __init__(self, future_horizon: int, include_target: bool) -> None:
         self.future_horizon = future_horizon
+        self.include_target = include_target
         
     def build(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.sort_values(["coin_id", "timestamp"]).copy()
@@ -65,24 +66,27 @@ class FeatureBuilder:
             df["volume"] / df["market_cap"].replace(0, np.nan)
         )
         
-        #Target variable
-        future = df[["coin_id", "timestamp", "price"]].copy()
+        if self.include_target:
+            
+            #Target variable
+            future = df[["coin_id", "timestamp", "price"]].copy()
 
-        future["timestamp"] = future["timestamp"] - pd.Timedelta(hours=self.future_horizon)
+            future["timestamp"] = future["timestamp"] - pd.Timedelta(hours=self.future_horizon)
 
-        future = future.rename(columns={"price": "future_price"})
+            future = future.rename(columns={"price": "future_price"})
 
-        df = df.merge(
-            future,
-            on=["coin_id", "timestamp"],
-            how="left",
-        )
+            df = df.merge(
+                future,
+                on=["coin_id", "timestamp"],
+                how="left",
+            )
 
-        df = df.dropna(subset=["future_price"]).copy()
+            df = df.dropna(subset=["future_price"]).copy()
 
-        df["target"] = (df["future_price"] > df["price"]).astype(int)
+            df["target"] = (df["future_price"] > df["price"]).astype(int)
 
-        df = df.drop(columns="future_price")
+            df = df.drop(columns="future_price")
+            
 
         #Getting rid of possibly bad values
         df = df.replace([np.inf, -np.inf], np.nan)

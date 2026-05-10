@@ -12,7 +12,7 @@ def main() -> None:
     
     df = pd.read_parquet(DATA_PATH)
     
-    builder = FeatureBuilder(future_horizon=HORIZON)
+    builder = FeatureBuilder(future_horizon=HORIZON, include_target=True)
     feature_df = builder.build(df)
     
     feature_df.to_parquet(OUTPUT_PATH, index=False)
