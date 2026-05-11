@@ -615,7 +615,7 @@ wheels = [
 [[package]]
 name = "i-ba-mlops-mm-project"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "click" },
     { name = "fastapi", extra = ["standard"] },

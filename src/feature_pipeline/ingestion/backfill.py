@@ -2,11 +2,11 @@ import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from dotenv import load_dotenv
 from tqdm import tqdm
 
-import click
 from feature_pipeline.ingestion.coingecko_client import CoinGeckoClient
-from dotenv import load_dotenv
 
 load_dotenv()
 API_KEY = os.getenv("COINGECKO_API_KEY")
@@ -24,12 +24,7 @@ RAW_BACKFILL_DIR = Path("data/raw/backfill")
 BACKFILL_DAYS = 365
 
 
-@click.command()
-@click.option("--n-coins", default=100, show_default=True, type=int, help="Number of Coins to extract Data from")
-@click.option("--currency", default="chf", show_default=True, type=str, help="Currency of Coin-Data")
-
-
-def main(n_coins: int, currency: str) -> None:
+def backfill_coin_data(n_coins: int, currency: str) -> None:
     RAW_BACKFILL_DIR.mkdir(parents=True, exist_ok=True)
 
     client = CoinGeckoClient(base_url=BASE_URL, endpoint=ENDPOINT)
@@ -73,4 +68,4 @@ def main(n_coins: int, currency: str) -> None:
         
 
 if __name__ == "__main__":
-    main()
+    backfill_coin_data()

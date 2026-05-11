@@ -1,11 +1,13 @@
-import pandas as pd
 from pathlib import Path
-from feature_builder import FeatureBuilder
+
+import pandas as pd
+
+from feature_pipeline.transforms.feature_builder import FeatureBuilder
 
 DATA_PATH = Path("data/staging/market_data.parquet")
 ONLINE_STORE_PATH = Path("data/online_store/online_features.parquet")
 
-def main():
+def build_online_feature_table():
     ONLINE_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
     
     builder = FeatureBuilder(future_horizon=24, include_target=False)
@@ -31,5 +33,5 @@ def main():
     online_features.to_parquet(ONLINE_STORE_PATH, index=False)
     
 if __name__ == "__main__":
-    main()
+    build_online_feature_table()
     

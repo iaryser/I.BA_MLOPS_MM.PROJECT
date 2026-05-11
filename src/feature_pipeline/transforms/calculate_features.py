@@ -1,13 +1,15 @@
-import pandas as pd 
 from pathlib import Path
-from feature_builder import FeatureBuilder
+
+import pandas as pd
+
+from feature_pipeline.transforms.feature_builder import FeatureBuilder
 
 DATA_PATH = Path("data/staging/market_data.parquet")
 OUTPUT_PATH = Path("data/aggregated/feature_data.parquet")
 
 HORIZON = 24
 
-def main() -> None:
+def build_offline_feature_table() -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     
     df = pd.read_parquet(DATA_PATH)
@@ -19,4 +21,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    build_offline_feature_table()

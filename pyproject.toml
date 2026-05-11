@@ -21,6 +21,11 @@ dependencies = [
     "xgboost>=3.2.0",
 ]
 
+[project.scripts]
+feature-batch = "feature_pipeline.batch_pipeline:run_batch_pipeline"
+feature-backfill = "feature_pipeline.backfill_pipeline:run_backfill_pipeline"
+train-xgboost = "training_pipeline:main"
+
 [dependency-groups]
 dev = [
     "ruff>=0.15.10",
@@ -36,3 +41,13 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = true

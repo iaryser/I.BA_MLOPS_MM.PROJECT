@@ -1,7 +1,8 @@
-from pathlib import Path
 import json
+from datetime import UTC, datetime
+from pathlib import Path
+
 import pandas as pd
-from datetime import datetime, UTC
 
 DATA_PATH = Path("data/staging/market_data.parquet")
 
@@ -15,7 +16,7 @@ def transform_json_to_rows(directory: Path) -> list[dict[str]]:
     for file in sorted(directory.glob("*.json")):
         coin_id = file.name.split("_")[0]
         
-        with open(file, "r") as f:
+        with open(file) as f:
             data = json.load(f)
         
         prices = data["prices"]
@@ -23,12 +24,6 @@ def transform_json_to_rows(directory: Path) -> list[dict[str]]:
         volumes= data["total_volumes"]
         
         if not prices or not m_caps or not volumes:
-            print(
-                f"Skipping {file.name}: "   
-                f"prices={len(prices)}, "
-                f"market_caps={len(m_caps)}, "
-                f"volumes={len(volumes)}"
-            )
             continue
         
         min_len = min(len(prices), len(m_caps), len(volumes))
@@ -81,7 +76,7 @@ def load_market_data(path: Path) -> pd.DataFrame:
     return pd.read_parquet(DATA_PATH)
 
 
-def main() -> None:
+def build_staging_table() -> None:
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     market_df = load_market_data(DATA_PATH)
@@ -104,4 +99,4 @@ def main() -> None:
     
     
 if __name__ == "__main__":
-    main()
+    build_staging_table()
