@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import Any
+
+from pydantic import BaseModel
 
 
 class PredictionRequest(BaseModel):
@@ -18,3 +19,7 @@ class LoadedModel(BaseModel):
     threshold: float
     version: str
     alias: str
+    
+class TopCoin(BaseModel):
+    coin_id: str
+    volume: float

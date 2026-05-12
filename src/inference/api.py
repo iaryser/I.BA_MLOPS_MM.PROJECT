@@ -1,19 +1,22 @@
-from fastapi import FastAPI
 from pathlib import Path
 
-from online_feature_loader import OnlineFeatureLoader
-from model_loader import ModelLoader
-from prediction_service import PredictionService
+from fastapi import FastAPI
 
-from schemas import *
-
+from inference.model_loader import ModelLoader
+from inference.offline_feature_loader import OfflineFeatureLoader
+from inference.online_feature_loader import OnlineFeatureLoader
+from inference.prediction_service import PredictionService
+from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
 
 app = FastAPI(title="Crypto Direction Prediction API")
 
 
 ONLINE_FEATURE_PATH = Path("data/online_store/online_features.parquet")
+OFFLINE_FEATURE_PATH = Path("data/aggregated/feature_data.parquet")
 
-feature_loader = OnlineFeatureLoader(data_path=ONLINE_FEATURE_PATH)
+online_feature_loader = OnlineFeatureLoader(data_path=ONLINE_FEATURE_PATH)
+offline_feature_loader = OfflineFeatureLoader(data_path=OFFLINE_FEATURE_PATH)
+
 
 model_loader = ModelLoader(
     artifact_name="xgboost-direction-model",
@@ -22,7 +25,7 @@ model_loader = ModelLoader(
 
 prediction_service = PredictionService(
     model_loader=model_loader,
-    feature_loader=feature_loader
+    feature_loader=online_feature_loader
 )
 
 
@@ -33,7 +36,17 @@ def health() -> dict[str, str]:
 
 @app.get("/coins")
 def get_coins() -> list[str]:
-    return feature_loader.get_available_coins()
+    return online_feature_loader.get_available_coins()
+
+
+@app.get("/top5_coins")
+def get_top5_coins() -> list[TopCoin]:
+    return online_feature_loader.load_top5_coins()
+
+
+@app.get("/coin_context")
+def get_coin_metadata(coin_id: str, n_days: int) -> list[dict]:
+    return offline_feature_loader.load_coin_context_data(coin_id=coin_id, n_days=n_days)
 
 
 @app.post("/predict")
