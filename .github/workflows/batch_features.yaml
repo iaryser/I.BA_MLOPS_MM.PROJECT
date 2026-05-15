@@ -5,6 +5,10 @@ on:
     - cron: "0 */1 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   batch-features:
     runs-on: ubuntu-latest
@@ -21,5 +25,34 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Download existing data from GCS
+        run: |
+          mkdir -p data/raw/backfill data/raw/hourly data/staging data/aggregated data/online_store
+
+          gcloud storage cp --recursive gs://${{ vars.GCS_BUCKET_NAME }}/raw/backfill/* data/raw/backfill/
+          gcloud storage cp --recursive gs://${{ vars.GCS_BUCKET_NAME }}/raw/hourly/* data/raw/hourly/ || true
+
+          gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet data/staging/market_data.parquet
+          gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/offline_store/feature_data.parquet data/aggregated/feature_data.parquet
+          gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/online_store/online_features.parquet data/online_store/online_features.parquet
+
       - name: Run batch feature pipeline
         run: uv run feature-batch
+
+      - name: Upload updated data to GCS
+        run: |
+          gcloud storage cp --recursive data/raw/hourly/* gs://${{ vars.GCS_BUCKET_NAME }}/raw/hourly/
+
+          gcloud storage cp data/staging/market_data.parquet gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet
+          gcloud storage cp data/aggregated/feature_data.parquet gs://${{ vars.GCS_BUCKET_NAME }}/offline_store/feature_data.parquet
+          gcloud storage cp data/online_store/online_features.parquet gs://${{ vars.GCS_BUCKET_NAME }}/online_store/online_features.parquet

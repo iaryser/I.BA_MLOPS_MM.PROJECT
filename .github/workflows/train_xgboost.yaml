@@ -24,8 +24,21 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run feature-batch pipeline
-        run: uv run feature-batch
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Download Feature Table from GCS
+        run: |
+          mkdir data/aggregated
+
+          gcloud storage cp gs://${{ vars.GCP_BUCKET_NAME }}/offline_store/feature_data.parquet data/aggregated/feature_data.parquet
 
       - name: Run training pipeline
         run: uv run train-xgboost
