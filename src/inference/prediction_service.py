@@ -15,7 +15,7 @@ class PredictionService:
         self.feature_loader = feature_loader
 
     def predict(self, coin_id: str) -> PredictionResponse:
-        loaded_model = self.model_loader.load_model()
+        loaded_model = self.model_loader.get_model()
         features = self.feature_loader.load_features(coin_id=coin_id)
         
         predictor = Predictor(

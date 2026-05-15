@@ -8,7 +8,6 @@ from inference.schemas import LoadedModel
 
 load_dotenv()
 
-
 class ModelLoader:
     
     def __init__(self, artifact_name: str, alias: str, model_name: str) -> None:
@@ -31,8 +30,13 @@ class ModelLoader:
         self.alias = alias
         self.model_name = model_name
         
+        self.model = self._load_model()
         
-    def load_model(self) -> LoadedModel:
+        
+    def get_model(self) -> LoadedModel:
+        return self.model
+        
+    def _load_model(self) -> LoadedModel:
         api = wandb.Api()
         
         artifact = api.artifact(

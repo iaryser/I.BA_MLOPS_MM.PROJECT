@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-class BaseFeatureLoader:
+class BaseDataLoader:
     
     def __init__(self, data_path: Path) -> None:
         self.data_path = data_path

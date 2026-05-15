@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from inference.model_loader import ModelLoader
-from inference.offline_feature_loader import OfflineFeatureLoader
+from inference.market_context_loader import MarketContextLoader
 from inference.online_feature_loader import OnlineFeatureLoader
 from inference.prediction_service import PredictionService
 from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
@@ -12,10 +12,10 @@ app = FastAPI(title="Crypto Direction Prediction API")
 
 
 ONLINE_FEATURE_PATH = Path("data/online_store/online_features.parquet")
-OFFLINE_FEATURE_PATH = Path("data/aggregated/feature_data.parquet")
+MARKET_DATA_PATH = Path("data/staging/market_data.parquet")
 
 online_feature_loader = OnlineFeatureLoader(data_path=ONLINE_FEATURE_PATH)
-offline_feature_loader = OfflineFeatureLoader(data_path=OFFLINE_FEATURE_PATH)
+market_data_loader = MarketContextLoader(data_path=MARKET_DATA_PATH)
 
 
 model_loader = ModelLoader(
@@ -46,7 +46,7 @@ def get_top5_coins() -> list[TopCoin]:
 
 @app.get("/coin_context")
 def get_coin_metadata(coin_id: str, n_days: int) -> list[dict]:
-    return offline_feature_loader.load_coin_context_data(coin_id=coin_id, n_days=n_days)
+    return market_data_loader.load_coin_context_data(coin_id=coin_id, n_days=n_days)
 
 
 @app.post("/predict")
