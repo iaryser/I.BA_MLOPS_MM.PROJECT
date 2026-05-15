@@ -25,7 +25,7 @@ def run_batch_pipeline(n_coins: int, currency: str) -> None:
     print("Step 4/4 Using latest market data to build online feature table...")
     build_online_feature_table()
     
-    print("Backfill pipeline completed successfully")
+    print("Batch pipeline completed successfully")
     
 if __name__ == "__main__":
     run_batch_pipeline()

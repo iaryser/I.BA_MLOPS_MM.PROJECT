@@ -16,18 +16,23 @@ params = {
     "sparkline": "false",
 }
 
-res = requests.get(URL, params=params, timeout=10)
-data = res.json()
 
-coin_dict = {}
+def main() -> None:
+    res = requests.get(URL, params=params, timeout=10)
+    data = res.json()
 
-for coin in data:
-    coin_dict[coin["id"]] = {
-        "symbol": coin["symbol"],
-        "name": coin["name"],
-        "price": coin["current_price"],
-        "rank": coin["market_cap_rank"],
-    }
+    coin_dict = {}
 
-with open(FILEPATH / "top100_coins.json", "w") as f:
-    json.dump(coin_dict, f, indent=2)
+    for coin in data:
+        coin_dict[coin["id"]] = {
+            "symbol": coin["symbol"],
+            "name": coin["name"],
+            "price": coin["current_price"],
+            "rank": coin["market_cap_rank"],
+        }
+
+    with open(FILEPATH / "top100_coins.json", "w") as f:
+        json.dump(coin_dict, f, indent=2)
+
+if __name__ == "__main__":
+    main()

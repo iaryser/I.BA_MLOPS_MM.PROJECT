@@ -16,7 +16,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from training_data_builder import TrainingDataBuilder
+from training_pipeline.training_data_builder import TrainingDataBuilder
 from xgboost import XGBClassifier
 
 import wandb
@@ -47,7 +47,6 @@ LATEST_ALIAS = "latest-v2"
 FEATURE_DATA = Path("data/aggregated/feature_data.parquet")
 
 FEATURE_COLUMNS = [
-    'volume',
     'return',
     'return_6',
     'return_12',
