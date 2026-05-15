@@ -50,7 +50,6 @@ jobs:
       - name: Upload updated data to GCS
         run: |
           gcloud storage cp --recursive data/raw/backfill/* gs://${{ vars.GCS_BUCKET_NAME }}/raw/backfill/
-          gcloud storage cp --recursive data/raw/hourly/* gs://${{ vars.GCS_BUCKET_NAME }}/raw/hourly/
 
           gcloud storage cp data/staging/market_data.parquet gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet
           gcloud storage cp data/aggregated/feature_data.parquet gs://${{ vars.GCS_BUCKET_NAME }}/offline_store/feature_data.parquet
