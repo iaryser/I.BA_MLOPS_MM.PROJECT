@@ -1,0 +1,31 @@
+name: Train XGBoost Classifier Model
+
+on:
+  schedule:
+    - cron: "0 3 * * 6"
+  workflow_dispatch:
+
+jobs:
+  train-xgboost:
+    runs-on: ubuntu-latest
+
+    env:
+      COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      WANDB_ENTITY: ${{ vars.WANDB_ENTITY }}
+      WANDB_PROJECT: ${{ vars.WANDB_PROJECT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run feature-batch pipeline
+        run: uv run feature-batch
+
+      - name: Run training pipeline
+        run: uv run train-xgboost
