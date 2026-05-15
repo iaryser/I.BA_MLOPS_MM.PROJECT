@@ -3,7 +3,7 @@ from pathlib import Path
 
 import requests
 
-FILEPATH = Path("data/raw/market_snapshot")
+FILEPATH = Path("data/reference")
 FILEPATH.mkdir(parents=True, exist_ok=True)
 
 URL = "https://api.coingecko.com/api/v3/coins/markets"

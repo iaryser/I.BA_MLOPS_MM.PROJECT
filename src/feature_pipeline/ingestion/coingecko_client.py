@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from requests.exceptions import ReadTimeout, RequestException
 
-COIN_ID_DATA = Path("data/raw/market_snapshot/top100_coins.json")
+COIN_ID_DATA = Path("data/reference/top100_coins.json")
 
 
 class CoinGeckoClient:
