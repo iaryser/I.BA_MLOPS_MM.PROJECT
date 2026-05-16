@@ -5,6 +5,10 @@ on:
     - cron: "0 3 * * 6"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   train-xgboost:
     runs-on: ubuntu-latest
@@ -36,7 +40,7 @@ jobs:
 
       - name: Download Feature Table from GCS
         run: |
-          mkdir data/aggregated
+          mkdir -p data/aggregated
 
           gcloud storage cp gs://${{ vars.GCP_BUCKET_NAME }}/offline_store/feature_data.parquet data/aggregated/feature_data.parquet
 
