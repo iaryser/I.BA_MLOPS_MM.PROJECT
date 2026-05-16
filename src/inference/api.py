@@ -1,4 +1,4 @@
-from pathlib import Path
+import os
 
 from fastapi import FastAPI
 
@@ -11,8 +11,8 @@ from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
 app = FastAPI(title="Crypto Direction Prediction API")
 
 
-ONLINE_FEATURE_PATH = Path("data/online_store/online_features.parquet")
-MARKET_DATA_PATH = Path("data/staging/market_data.parquet")
+ONLINE_FEATURE_PATH = os.getenv("ONLINE_FEATURE_PATH")
+MARKET_DATA_PATH = os.getenv("MARKET_DATA_PATH")
 
 online_feature_loader = OnlineFeatureLoader(data_path=ONLINE_FEATURE_PATH)
 market_data_loader = MarketContextLoader(data_path=MARKET_DATA_PATH)
@@ -52,3 +52,10 @@ def get_coin_metadata(coin_id: str, n_days: int) -> list[dict]:
 @app.post("/predict")
 def predict(req: PredictionRequest) -> PredictionResponse:
     return prediction_service.predict(req.coin_id)
+
+
+@app.get("/reload-data")
+def reload_data() -> dict[str, str]:
+    online_feature_loader.reload()
+    market_data_loader.reload()
+    return {"status": "reloaded"}

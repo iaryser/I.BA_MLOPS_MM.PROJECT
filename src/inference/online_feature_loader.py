@@ -20,11 +20,9 @@ class OnlineFeatureLoader(BaseDataLoader):
         
 
     def get_available_coins(self) -> list[str]:
-        self.reload()
         return sorted(self.df["coin_id"].unique().tolist())
 
     def load_features(self, coin_id: str) -> pd.DataFrame:
-        self.reload()
         return (
             self.df[self.df["coin_id"] == coin_id]
             .drop(self._non_feature_columns, axis=1)
@@ -35,7 +33,6 @@ class OnlineFeatureLoader(BaseDataLoader):
         return row.to_dict()
 
     def load_top5_coins(self) -> list[TopCoin]:
-        self.reload()
         top_df = (
             self.df
             .sort_values("volume", ascending=False)

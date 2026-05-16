@@ -1,11 +1,10 @@
-from pathlib import Path
 
 import pandas as pd
 
 
 class BaseDataLoader:
     
-    def __init__(self, data_path: Path) -> None:
+    def __init__(self, data_path: str) -> None:
         self.data_path = data_path
         self.df = pd.read_parquet(data_path)
 

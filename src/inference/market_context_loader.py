@@ -10,7 +10,6 @@ class MarketContextLoader(BaseDataLoader):
         super().__init__(data_path)
         
     def load_coin_context_data(self, coin_id: str, n_days: int) -> list[dict]:
-        self.reload()
         
         hours = n_days * 24
 
