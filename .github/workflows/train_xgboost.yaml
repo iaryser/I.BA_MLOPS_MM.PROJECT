@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p data/aggregated
 
-          gcloud storage cp gs://${{ vars.GCP_BUCKET_NAME }}/offline_store/feature_data.parquet data/aggregated/feature_data.parquet
+          gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/offline_store/feature_data.parquet data/aggregated/feature_data.parquet
 
       - name: Run training pipeline
         run: uv run train-xgboost
