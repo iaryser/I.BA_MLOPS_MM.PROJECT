@@ -2,7 +2,7 @@ name: Batch Feature Refresh
 
 on:
   schedule:
-    - cron: "0 */1 * * *"
+    - cron: "21 * * * *"
   workflow_dispatch:
     inputs:
       n_coins: 
