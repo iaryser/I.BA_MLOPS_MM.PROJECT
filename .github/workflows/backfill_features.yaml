@@ -2,6 +2,12 @@ name: Feature Backfill
 
 on:
   workflow_dispatch:
+    inputs:
+      n_coins:
+        description: "Number of coins to fetch from CoinGecko API"
+        required: false
+        default: "100"
+        type: number
 
 permissions:
   contents: read
@@ -45,7 +51,7 @@ jobs:
           gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/online_store/online_features.parquet data/online_store/online_features.parquet || true
 
       - name: Run backfill feature pipeline
-        run: uv run feature-backfill
+        run: uv run feature-backfill --n-coins ${{ inputs.n_coins || '100' }}
 
       - name: Upload updated data to GCS
         run: |
