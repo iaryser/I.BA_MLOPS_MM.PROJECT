@@ -12,6 +12,7 @@ dependencies = [
     "matplotlib>=3.10.9",
     "pandas>=3.0.2",
     "pyarrow>=24.0.0",
+    "pytest>=9.0.3",
     "python-dotenv>=1.2.2",
     "requests>=2.33.1",
     "scikit-learn>=1.8.0",
@@ -37,6 +38,7 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py314"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -54,3 +56,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv]
 package = true
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:.*Scope.user.*:DeprecationWarning:wandb.*",
+]
