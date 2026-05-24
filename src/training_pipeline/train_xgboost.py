@@ -16,10 +16,15 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from training_pipeline.training_data_builder import TrainingDataBuilder
 from xgboost import XGBClassifier
 
 import wandb
+from training_pipeline.training_data_builder import TrainingDataBuilder
+
+
+# ---------------------------------------------------------------------
+# Environment
+# ---------------------------------------------------------------------
 
 load_dotenv()
 
@@ -27,24 +32,40 @@ API_KEY = os.getenv("WANDB_API_KEY")
 WANDB_ENTITY = os.getenv("WANDB_ENTITY")
 WANDB_PROJECT = os.getenv("WANDB_PROJECT")
 
-if not API_KEY:
-    raise RuntimeError("WANDB_API_KEY not set")
 
-if not WANDB_ENTITY: 
-    raise RuntimeError("WANDB_ENTITY not set")
+# ---------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------
 
-if not WANDB_PROJECT: 
-    raise RuntimeError("WANDB_PROJECT not set")
-
+FEATURE_DATA = Path("data/aggregated/feature_data.parquet")
 CURRENT_MODEL_PATH = Path("models/train/xgboost_model.joblib")
 PRODUCTION_MODEL_PATH = Path("models/production/xgboost_model.joblib")
 
+
+# ---------------------------------------------------------------------
+# W&B artifact configuration
+# ---------------------------------------------------------------------
+
 MODEL_ARTIFACT_NAME = "xgboost-direction-model"
+BEST_ALIAS = "best-v3"
+LATEST_ALIAS = "latest-v3"
+PRODUCTION_ALIAS = "production"
 
-BEST_ALIAS = "best-v2"
-LATEST_ALIAS = "latest-v2"
 
-FEATURE_DATA = Path("data/aggregated/feature_data.parquet")
+# ---------------------------------------------------------------------
+# Modeling configuration
+# ---------------------------------------------------------------------
+
+PREDICTION_THRESHOLD = 0.5
+MIN_DATAPOINTS_PER_COIN = 8000
+SWEEP_RUN_COUNT = 50
+TRAIN_WINDOW_MONTHS = 3
+VAL_WINDOW_MONTHS = 1
+
+
+# ---------------------------------------------------------------------
+# Feature Columns
+# ---------------------------------------------------------------------
 
 FEATURE_COLUMNS = [
     'return',
@@ -67,39 +88,30 @@ FEATURE_COLUMNS = [
 ]
 
 
+# ---------------------------------------------------------------------
+# Sweep Confiugration
+# ---------------------------------------------------------------------
+
 sweep_config = {
     "method": "random",
     "metric": {
-        "name": "mean_val_f1_score",
+        "name": "mean_val_balanced_accuracy",
         "goal": "maximize",
     },
     "parameters": {
         "booster": {"value": "gbtree"},
-        "max_depth": {"values": [2, 3, 4]},
-        "learning_rate": {"values": [0.03, 0.05, 0.1]},
-        "subsample": {"values": [0.8, 1.0]},
-        "n_estimators": {"values": [100, 200, 400]},
-        "min_child_weight": {"values": [1, 3, 5]},
-        "colsample_bytree": {"values": [0.8, 1.0]},
-        "gamma": {"values": [0, 0.1]},
-        "reg_lambda": {"values": [1, 2, 5]},
-        "reg_alpha": {"values": [0, 0.01]},
+        "max_depth": {"values": [1, 2, 3, 4, 5]},
+        "learning_rate": {"values": [0.01, 0.02, 0.03, 0.05, 0.1]},
+        "n_estimators": {"values": [100, 200, 400, 600]},
+        "min_child_weight": {"values": [1, 3, 5, 10]},
+        "subsample": {"values": [0.6, 0.8, 1.0]},
+        "colsample_bytree": {"values": [0.6, 0.8, 1.0]},
+        "gamma": {"values": [0, 0.1, 0.5, 1]},
+        "reg_lambda": {"values": [1, 2, 5, 10]},
+        "reg_alpha": {"values": [0, 0.01, 0.1, 1]},
     },
 }
 
-def load_wandb_config() -> tuple[str, str, str]:
-    api_key = os.getenv("WANDB_API_KEY")
-    entity = os.getenv("WANDB_ENTITY")
-    project = os.getenv("WANDB_PROJECT")
-
-    if not api_key:
-        raise RuntimeError("WANDB_API_KEY not set")
-    if not entity:
-        raise RuntimeError("WANDB_ENTITY not set")
-    if not project:
-        raise RuntimeError("WANDB_PROJECT not set")
-
-    return api_key, entity, project
 
 
 def evaluate_model(
@@ -141,7 +153,7 @@ def create_model(config) -> XGBClassifier:
     return model
     
 
-def train(df: pd.DataFrame):
+def train(df: pd.DataFrame) -> None:
     with wandb.init() as run:
         config = run.config
 
@@ -151,14 +163,13 @@ def train(df: pd.DataFrame):
         end = df["timestamp"].max()
 
         train_start = start
-        train_end = train_start + relativedelta(months=3)
+        train_end = train_start + relativedelta(months=TRAIN_WINDOW_MONTHS)
 
         fold_metrics = []
-        fold = 0
 
         while True:
             val_start = train_end
-            val_end = val_start + relativedelta(months=1)
+            val_end = val_start + relativedelta(months=VAL_WINDOW_MONTHS)
 
             if val_end > end:
                 break
@@ -182,34 +193,19 @@ def train(df: pd.DataFrame):
             model = create_model(config=config)
 
             model.fit(X_train, y_train)
-
-            y_proba = model.predict_proba(X_val)[:, 1]
             
-            best_threshold = 0.5
-            best_f1 = -1
-            best_y_pred = None
-
-            for threshold in [0.45, 0.46, 0.47, 0.48, 0.49, 0.5]:
-                candidate_y_pred = (y_proba >= threshold).astype(int)
-                candidate_f1 = f1_score(y_val, candidate_y_pred, zero_division=0)
-
-                if candidate_f1 > best_f1:
-                    best_f1 = candidate_f1
-                    best_threshold = threshold
-                    best_y_pred = candidate_y_pred
+            y_proba = model.predict_proba(X_val)[:, 1]
+            y_pred = (y_proba >= PREDICTION_THRESHOLD).astype(int)
 
             metrics = evaluate_model(
                 y_true=y_val,
-                y_pred=best_y_pred,
+                y_pred=y_pred,
                 y_proba=y_proba,
             )
-
-            metrics["threshold"] = best_threshold
 
             fold_metrics.append(metrics)
 
             train_end += relativedelta(months=1)
-            fold += 1
 
         metrics_df = pd.DataFrame(fold_metrics)
 
@@ -220,7 +216,6 @@ def train(df: pd.DataFrame):
             "mean_val_f1_score": metrics_df["f1_score"].mean(),
             "mean_val_roc_auc_score": metrics_df["roc_auc_score"].mean(),
             "mean_val_log_loss": metrics_df["log_loss"].mean(),
-            "mean_val_threshold": metrics_df["threshold"].mean(),
             "mean_val_balanced_accuracy": metrics_df["balanced_accuracy"].mean(),
             "mean_val_predicted_positive_rate": metrics_df["predicted_positive_rate"].mean(),
             "mean_val_actual_positive_rate": metrics_df["actual_positive_rate"].mean(),
@@ -228,38 +223,48 @@ def train(df: pd.DataFrame):
         }
 
         wandb.log(summary_metrics)
+        
 
-def get_best_config_and_threshold(entity: str, project: str, sweep_id: str) -> tuple[dict, float]:
+def get_best_config(entity: str, project: str, sweep_id: str) -> dict:
     api = wandb.Api()
 
     sweep = api.sweep(f"{entity}/{project}/{sweep_id}")
     best_run = sweep.best_run()
     
     best_config = dict(best_run.config)
-    best_threshold = best_run.summary.get("mean_val_threshold", 0.5)
-    
 
-    return best_config, best_threshold
+    return best_config
 
 
 
-def load_current_best_f1(run) -> float | None:
+def load_current_best_metrics(run) -> dict | None:
     try:
         artifact = run.use_artifact(
             f"{MODEL_ARTIFACT_NAME}:{BEST_ALIAS}",
             type="model",
         )
-        return artifact.metadata.get("test_f1_score")
+        return dict(artifact.metadata)
     except Exception:
         return None
+
+def is_better_than_current(test_metrics: dict[str, float], current_metrics: dict | None) -> bool:
+    if current_metrics is None:
+        return True
+    
+    return (
+        test_metrics["balanced_accuracy"]
+        > current_metrics.get("test_balanced_accuracy", 0)
+        and test_metrics["roc_auc_score"]
+        >= current_metrics.get("test_roc_auc_score", 0)
+        and 0.3 <= test_metrics["predicted_positive_rate"] <= 0.8
+    )
     
     
 def train_final_model(
     best_config: dict,
-    best_threshold: float,
     train_val_df: pd.DataFrame,
     test_df: pd.DataFrame
-    ) -> bool:
+    ) -> tuple[bool, dict[str, float]]:
     with wandb.init(
         config=best_config,
         project=WANDB_PROJECT,
@@ -277,7 +282,7 @@ def train_final_model(
         model.fit(X_train, y_train)
         
         y_proba = model.predict_proba(X_test)[:, 1]
-        y_pred = (y_proba >= best_threshold).astype(int)
+        y_pred = (y_proba >= PREDICTION_THRESHOLD).astype(int)
         
         test_metrics = evaluate_model(
             y_true=y_test,
@@ -295,7 +300,6 @@ def train_final_model(
             "test_balanced_accuracy": test_metrics["balanced_accuracy"],
             "test_predicted_positive_rate": test_metrics["predicted_positive_rate"],
             "test_actual_positive_rate": test_metrics["actual_positive_rate"],
-            "decision_threshold": best_threshold,
         })
         
         joblib.dump(model, CURRENT_MODEL_PATH)
@@ -306,7 +310,6 @@ def train_final_model(
             metadata={
                 "test_f1_score": test_metrics["f1_score"],
                 "test_accuracy": test_metrics["accuracy"],
-                "decision_threshold": best_threshold,
                 "trained_on": "train_val",
                 "features": FEATURE_COLUMNS,
                 "hyperparameters": best_config,
@@ -326,10 +329,12 @@ def train_final_model(
         
         aliases = [LATEST_ALIAS]
         
-        best_f1 = load_current_best_f1(run)
+        best_metrics = load_current_best_metrics(run)
+        
+        better_than_current = is_better_than_current(test_metrics, best_metrics)
         
         is_best = False
-        if best_f1 is None or test_metrics["f1_score"] > best_f1:
+        if better_than_current:
             aliases.append(BEST_ALIAS)
             is_best = True
             
@@ -339,14 +344,14 @@ def train_final_model(
             aliases=aliases
         )
         
-        return is_best
+        return is_best, test_metrics
     
 
 def train_production_model(
     best_config: dict,
-    best_threshold: float,
     train_val_df: pd.DataFrame,
-    test_df: pd.DataFrame
+    test_df: pd.DataFrame,
+    test_metrics: dict[str, float]
     ) -> None:
     
     with wandb.init(
@@ -370,10 +375,17 @@ def train_production_model(
             name=MODEL_ARTIFACT_NAME,
             type="model",
             metadata={
-                "decision_threshold": best_threshold,
                 "trained_on": "all_available_data",
                 "features": FEATURE_COLUMNS,
                 "hyperparameters": best_config,
+                "validated_test_f1_score": test_metrics["f1_score"],
+                "validated_test_accuracy": test_metrics["accuracy"],
+                "validated_test_balanced_accuracy": test_metrics["balanced_accuracy"],
+                "validated_test_precision": test_metrics["precision"],
+                "validated_test_recall": test_metrics["recall"],
+                "validated_test_roc_auc_score": test_metrics["roc_auc_score"],
+                "validated_test_predicted_positive_rate": test_metrics["predicted_positive_rate"],
+                "validated_test_actual_positive_rate": test_metrics["actual_positive_rate"],
             },
         )
         
@@ -384,7 +396,7 @@ def train_production_model(
             
         run.log_artifact(
             artifact,
-            aliases=["production"]
+            aliases=[PRODUCTION_ALIAS]
         )
         
 
@@ -407,23 +419,22 @@ def main():
     
     feature_df = builder.filter_df_on_valid_coins(
         feature_df=feature_df,
-        min_datapoints_per_coin=8000)
+        min_datapoints_per_coin=MIN_DATAPOINTS_PER_COIN)
     
     train_val_df, test_df = builder.split_by_time(feature_df)
     
     def train_wrapper():
         train(train_val_df)
             
-    wandb.agent(sweep_id, train_wrapper, count=25)    
+    wandb.agent(sweep_id, train_wrapper, count=SWEEP_RUN_COUNT)  
     
-    best_config, best_threshold = get_best_config_and_threshold(
+    best_config = get_best_config(
         entity=WANDB_ENTITY,
         project=WANDB_PROJECT,
         sweep_id=sweep_id)
     
-    is_best = train_final_model(
+    is_best, test_metrics = train_final_model(
         best_config=best_config,
-        best_threshold=best_threshold,
         train_val_df=train_val_df,
         test_df=test_df
         )
@@ -431,9 +442,9 @@ def main():
     if is_best:
         train_production_model(
             best_config=best_config,
-            best_threshold=best_threshold,
             train_val_df=train_val_df,
-            test_df=test_df
+            test_df=test_df,
+            test_metrics=test_metrics
         )
         
 
