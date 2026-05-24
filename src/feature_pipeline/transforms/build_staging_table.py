@@ -73,20 +73,24 @@ def load_market_data(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
     
-    return pd.read_parquet(DATA_PATH)
+    return pd.read_parquet(path)
 
 
-def build_staging_table() -> None:
+def build_staging_table(source: str = "batch") -> None:
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
+    if not source in {"backfill", "batch"}:
+        raise ValueError("Invalid source")
 
     market_df = load_market_data(DATA_PATH)
     
-    backfill_data = pd.DataFrame(transform_json_to_rows(BACKFILL_DIR))
-    hourly_data = pd.DataFrame(transform_json_to_rows(HOURLY_DIR))
-    
-    market_df = pd.concat(
-        [market_df, backfill_data, hourly_data]
-    )
+    if source == "backfill":
+        backfill_data = pd.DataFrame(transform_json_to_rows(BACKFILL_DIR))
+        market_df = pd.concat([market_df, backfill_data])
+        
+    if source == "batch":   
+        hourly_data = pd.DataFrame(transform_json_to_rows(HOURLY_DIR))
+        market_df = pd.concat([market_df, hourly_data])
     
     market_df = market_df.drop_duplicates(
         subset=["coin_id", "timestamp"],

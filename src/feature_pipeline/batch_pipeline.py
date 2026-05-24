@@ -17,7 +17,7 @@ def run_batch_pipeline(n_coins: int, currency: str) -> None:
     batch_load_coin_data(n_coins=n_coins, currency=currency)
     
     print("Step 2/4 Building staging market table...")
-    build_staging_table()
+    build_staging_table(source="batch")
     
     print("Step 3/4 building offline feature table...")
     build_offline_feature_table()

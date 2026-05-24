@@ -43,13 +43,8 @@ jobs:
         run: |
           mkdir -p data/raw/backfill data/raw/hourly data/staging data/aggregated data/online_store
 
-          gcloud storage cp --recursive gs://${{ vars.GCS_BUCKET_NAME }}/raw/backfill/* data/raw/backfill/ || true
-          gcloud storage cp --recursive gs://${{ vars.GCS_BUCKET_NAME }}/raw/hourly/* data/raw/hourly/ || true
-
           gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet data/staging/market_data.parquet || true
-          gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/offline_store/feature_data.parquet data/aggregated/feature_data.parquet || true
-          gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/online_store/online_features.parquet data/online_store/online_features.parquet || true
-
+         
       - name: Run backfill feature pipeline
         run: uv run feature-backfill --n-coins ${{ inputs.n_coins || '100' }}
 
