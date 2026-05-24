@@ -49,11 +49,8 @@ class ModelLoader:
         
         model = joblib.load(model_path)
         
-        threshold = float(artifact.metadata.get("decision_threshold"))
-        
         return LoadedModel(
             model=model,
-            threshold=threshold,
             version=artifact.version,
             alias=self.alias
         )

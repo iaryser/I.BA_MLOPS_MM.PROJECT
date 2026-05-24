@@ -12,11 +12,10 @@ class PredictionResponse(BaseModel):
     prediciton: int
     direction: str
     probability_up: float
-    model_version: str
+    model_alias: str
     
 class LoadedModel(BaseModel):
     model: Any
-    threshold: float
     version: str
     alias: str
     

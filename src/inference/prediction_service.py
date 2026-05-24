@@ -18,10 +18,7 @@ class PredictionService:
         loaded_model = self.model_loader.get_model()
         features = self.feature_loader.load_features(coin_id=coin_id)
         
-        predictor = Predictor(
-            model=loaded_model.model,
-            threshold=loaded_model.threshold
-        )
+        predictor = Predictor(model=loaded_model.model)
         
         prediction_data = predictor.execute_prediction(features=features)
         context_data = self.feature_loader.load_context(coin_id=coin_id)
@@ -32,6 +29,6 @@ class PredictionService:
             prediciton=prediction_data.get("y_pred"),
             direction=prediction_data.get("direction"),
             probability_up=prediction_data.get("y_proba"),
-            model_version=loaded_model.version
+            model_alias=loaded_model.alias
         )
         return res
