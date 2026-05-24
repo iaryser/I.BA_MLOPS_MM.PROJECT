@@ -215,3 +215,18 @@ artifacts/
 # Local model artifacts
 *.joblib
 *.pkl
+
+# Terraform
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/*.tfvars
+!**/*.tfvars.example
+
+# Google GitHub Actions generated credentials
+gha-creds-*.json
+
+# Secrets
+secrets/
+*.pem
+*.key
