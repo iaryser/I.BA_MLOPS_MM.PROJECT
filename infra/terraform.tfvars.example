@@ -1,0 +1,5 @@
+#Rename this file to terraform.tfvars
+#It is meant to hold your Github secrets i.e. API keys for coingecko and wandb
+
+coingecko_api_key = "put-your-coingecko-api-key-here"
+wandb_api_key     = "put-your-wandb-api-key-here"
