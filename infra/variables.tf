@@ -1,7 +1,7 @@
 variable "gcp_project_id" {
   description = "Google Cloud project ID"
   type        = string
-  default     = "mlops-496411"
+  default     = "<Your GC project ID"
 }
 
 variable "gcp_region" {
@@ -13,7 +13,7 @@ variable "gcp_region" {
 variable "gcs_bucket_name" {
   description = "Google Cloud Storage bucket name"
   type        = string
-  default     = "mlops-496411-bucket"
+  default     = "<Your unique bucket name>"
 }
 
 variable "gcs_location" {
@@ -25,13 +25,13 @@ variable "gcs_location" {
 variable "github_owner" {
   description = "GitHub username or organization"
   type        = string
-  default     = "iaryser"
+  default     = "<Your Github username>"
 }
 
 variable "github_repository" {
   description = "GitHub repository name"
   type        = string
-  default     = "I.BA_MLOPS_MM.PROJECT"
+  default     = "<Your repository Name>"
 }
 
 variable "coingecko_api_key" {
@@ -49,11 +49,11 @@ variable "wandb_api_key" {
 variable "wandb_entity" {
   description = "Weights & Biases entity"
   type        = string
-  default     = "hslu-DSPRO2"
+  default     = "<Your W&B Entity>"
 }
 
 variable "wandb_project" {
   description = "Weights & Biases project"
   type        = string
-  default     = "crypto-direction-prediction"
+  default     = "<Your W&B project name>"
 }
