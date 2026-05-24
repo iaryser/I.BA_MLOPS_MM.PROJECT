@@ -1,9 +1,9 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
-
-from inference.schemas import TopCoin, PredictionResponse
 from api_client import get_coin_context
+
+from inference.schemas import PredictionResponse, TopCoin
 
 
 def render_volume_badge(volume: float) -> None:
@@ -114,20 +114,32 @@ def render_coin_card(coin: TopCoin, n_days: int) -> None:
         ):
             st.session_state["selected_coin"] = coin.coin_id
             st.switch_page("pages/prediction.py")
-            
-            
-def render_prediction_card(prediction: PredictionResponse) -> None:
-    col1, col2, col3 = st.columns(3)
 
-    timestamp = pd.to_datetime(prediction.timestamp).strftime("%d %b %Y %H:%M")
+
+def render_prediction_card(prediction: PredictionResponse) -> None:
+    col1, col2, col3, col4 = st.columns(4)
+
+    timestamp = pd.to_datetime(prediction.timestamp)
+
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.tz_localize("UTC")
+
+    timestamp = timestamp.tz_convert("Europe/Zurich")
+    timestamp = timestamp.strftime("%d %b %Y %H:%M %Z")
 
     with col1:
         st.metric("Coin", prediction.coin_id.upper())
-        
+
     with col2:
         st.metric("Direction over next 24h", prediction.direction)
 
     with col3:
-        st.metric("Model version", prediction.model_version)
+        if prediction.direction == "up":
+            st.metric("Probability up", f"{prediction.probability_up:.1%}")
+        else:
+            st.metric("Probability down", f"{1 - prediction.probability_up:.1%}")
+
+    with col4:
+        st.metric("Model version", prediction.model_alias)
 
     st.caption(f"Prediction generated at {timestamp}")

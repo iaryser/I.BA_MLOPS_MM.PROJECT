@@ -1,5 +1,4 @@
 import streamlit as st
-
 from api_client import check_server_health, get_available_coins, get_top5_coins
 from components import render_coin_card
 
@@ -9,7 +8,6 @@ def main() -> None:
         page_title="Crypto Direction Prediction",
         layout="wide",
     )
-    
 
     if not check_server_health():
         st.error("Backend server is not running or unhealthy.")
@@ -21,7 +19,8 @@ def main() -> None:
         """
         Welcome to the crypto direction prediction dashboard.  
         The app displays the most actively traded coins based on current trading volume
-        and allows you to request a 24-hour short-term price direction prediction for any available coin.
+        and allows you to request a 24-hour short-term price direction prediction for 
+        any available coin.
         """
     )
 
