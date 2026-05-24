@@ -1,11 +1,15 @@
 import streamlit as st
-
-from api_client import check_server_health, get_available_coins, get_coin_context, predict_coin
-from components import render_price_chart, render_prediction_card
+from api_client import (
+    check_server_health,
+    get_available_coins,
+    get_coin_context,
+    predict_coin,
+)
+from components import render_prediction_card, render_price_chart
 
 
 def main() -> None:
-    
+
     st.set_page_config(
         page_title="Prediction",
         layout="wide",
@@ -39,11 +43,12 @@ def main() -> None:
         st.warning("No chart data available.")
 
     st.divider()
-    
+
     if st.button("Predict direction"):
         prediction = predict_coin(selected_coin)
-        
+
         render_prediction_card(prediction)
+
 
 if __name__ == "__main__":
     main()

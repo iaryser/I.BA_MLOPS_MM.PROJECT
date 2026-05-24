@@ -7,7 +7,6 @@ from inference.schemas import TopCoin
 
 
 class OnlineFeatureLoader(BaseDataLoader):
-    
     def __init__(self, data_path: Path) -> None:
         super().__init__(data_path)
         self._non_feature_columns = [
@@ -17,27 +16,21 @@ class OnlineFeatureLoader(BaseDataLoader):
             "market_cap",
             "volume",
         ]
-        
 
     def get_available_coins(self) -> list[str]:
         return sorted(self.df["coin_id"].unique().tolist())
 
     def load_features(self, coin_id: str) -> pd.DataFrame:
-        return (
-            self.df[self.df["coin_id"] == coin_id]
-            .drop(self._non_feature_columns, axis=1)
+        return self.df[self.df["coin_id"] == coin_id].drop(
+            self._non_feature_columns, axis=1
         )
-        
+
     def load_context(self, coin_id: str) -> dict:
         row = self.df[self.df["coin_id"] == coin_id].iloc[0]
         return row.to_dict()
 
     def load_top5_coins(self) -> list[TopCoin]:
-        top_df = (
-            self.df
-            .sort_values("volume", ascending=False)
-            .head(5)
-        )
+        top_df = self.df.sort_values("volume", ascending=False).head(5)
 
         return [
             TopCoin(

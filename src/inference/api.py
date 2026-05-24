@@ -2,8 +2,8 @@ import os
 
 from fastapi import FastAPI
 
-from inference.model_loader import ModelLoader
 from inference.market_context_loader import MarketContextLoader
+from inference.model_loader import ModelLoader
 from inference.online_feature_loader import OnlineFeatureLoader
 from inference.prediction_service import PredictionService
 from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
@@ -21,11 +21,11 @@ market_data_loader = MarketContextLoader(data_path=MARKET_DATA_PATH)
 model_loader = ModelLoader(
     artifact_name="xgboost-direction-model",
     alias="production",
-    model_name="xgboost_model")
+    model_name="xgboost_model",
+)
 
 prediction_service = PredictionService(
-    model_loader=model_loader,
-    feature_loader=online_feature_loader
+    model_loader=model_loader, feature_loader=online_feature_loader
 )
 
 

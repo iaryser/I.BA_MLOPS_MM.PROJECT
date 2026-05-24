@@ -2,27 +2,23 @@ import pandas as pd
 
 
 class TrainingDataBuilder:
-    
     def filter_df_on_valid_coins(
-        self,
-        feature_df: pd.DataFrame,
-        min_datapoints_per_coin: int
+        self, feature_df: pd.DataFrame, min_datapoints_per_coin: int
     ) -> pd.DataFrame:
-        
+
         valid_coins = []
-        
+
         df = feature_df
-        
+
         coin_ids = df.groupby("coin_id")["coin_id"].count()
-        
+
         for coin, count in coin_ids.items():
             if count >= min_datapoints_per_coin:
                 valid_coins.append(coin)
 
         df = df[df["coin_id"].isin(valid_coins)]
-        
+
         return df
-    
 
     def split_by_time(
         self,

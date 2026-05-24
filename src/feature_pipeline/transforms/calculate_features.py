@@ -9,14 +9,15 @@ OUTPUT_PATH = Path("data/aggregated/feature_data.parquet")
 
 HORIZON = 24
 
+
 def build_offline_feature_table() -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
+
     df = pd.read_parquet(DATA_PATH)
-    
+
     builder = FeatureBuilder(future_horizon=HORIZON, include_target=True)
     feature_df = builder.build(df)
-    
+
     feature_df.to_parquet(OUTPUT_PATH, index=False)
 
 

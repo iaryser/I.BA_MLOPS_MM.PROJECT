@@ -34,5 +34,6 @@ def main() -> None:
     with open(FILEPATH / "top100_coins.json", "w") as f:
         json.dump(coin_dict, f, indent=2)
 
+
 if __name__ == "__main__":
     main()

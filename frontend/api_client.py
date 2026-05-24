@@ -1,8 +1,7 @@
-import requests
 import pandas as pd
+import requests
 
-from inference.schemas import TopCoin, PredictionRequest, PredictionResponse
-
+from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
 
 API_URL = "http://127.0.0.1:8000"
 

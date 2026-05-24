@@ -5,12 +5,11 @@ from inference.data_loader import BaseDataLoader
 
 
 class MarketContextLoader(BaseDataLoader):
-    
     def __init__(self, data_path: Path) -> None:
         super().__init__(data_path)
-        
+
     def load_coin_context_data(self, coin_id: str, n_days: int) -> list[dict]:
-        
+
         hours = n_days * 24
 
         coin_df = self.df[self.df["coin_id"] == coin_id].copy().sort_values("timestamp")
