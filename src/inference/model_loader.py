@@ -1,9 +1,9 @@
 import os
 
 import joblib
+import wandb
 from dotenv import load_dotenv
 
-import wandb
 from inference.schemas import LoadedModel
 
 load_dotenv()

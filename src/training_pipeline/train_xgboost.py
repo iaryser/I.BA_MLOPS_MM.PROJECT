@@ -4,6 +4,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+import wandb
 from dateutil.relativedelta import relativedelta
 from dotenv import load_dotenv
 from numpy.typing import NDArray
@@ -18,7 +19,6 @@ from sklearn.metrics import (
 )
 from xgboost import XGBClassifier
 
-import wandb
 from training_pipeline.training_data_builder import TrainingDataBuilder
 
 # ---------------------------------------------------------------------
