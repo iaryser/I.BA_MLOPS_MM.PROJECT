@@ -79,6 +79,21 @@ class FakeModel:
         return [[0.25, 0.75]]
 
 
+class FakeBlob:
+    def upload_from_string(self, data: str, content_type: str) -> None:
+        pass
+
+
+class FakeBucket:
+    def blob(self, blob_name: str) -> FakeBlob:
+        return FakeBlob()
+
+
+class FakeStorageClient:
+    def bucket(self, bucket_name: str) -> FakeBucket:
+        return FakeBucket()
+
+
 def test_health_endpoint_returns_ok(client) -> None:
     test_client, _ = client
 
@@ -140,6 +155,14 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(model_loader.wandb, "Api", lambda: fake_api)
     monkeypatch.setattr(model_loader.joblib, "load", lambda path: FakeModel())
+
+    from inference import inference_logger
+
+    monkeypatch.setattr(
+        inference_logger.storage,
+        "Client",
+        lambda: FakeStorageClient(),
+    )
 
     import inference.api as api
 
