@@ -209,7 +209,7 @@ def test_predict_endpoint_returns_prediction(client, monkeypatch) -> None:
         "direction": "up",
         "probability_up": 0.75,
         "model_alias": "production",
-        "model_version": "v1"
+        "model_version": "v1",
     }
 
 
