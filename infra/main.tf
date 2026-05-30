@@ -162,3 +162,18 @@ resource "github_actions_secret" "wandb_api_key" {
   secret_name = "WANDB_API_KEY"
   value       = var.wandb_api_key
 }
+
+resource "local_sensitive_file" "env_file" {
+  filename = "${path.module}/../.env"
+
+  content = <<EOT
+  COINGECKO_API_KEY="${var.coingecko_api_key}"
+
+  WANDB_API_KEY="${var.wandb_api_key}"
+  WANDB_ENTITY="${var.wandb_entity}"
+  WANDB_PROJECT="${var.wandb_project}"
+
+  ONLINE_FEATURE_PATH="gs://${var.gcs_bucket_name}/online_store/online_features.parquet"
+  MARKET_DATA_PATH="gs://${var.gcs_bucket_name}/staging/market_data.parquet"
+  EOT
+}
