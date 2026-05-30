@@ -32,7 +32,7 @@ class FakeFeatureLoader:
                 "return_6": [0.05],
             }
         )
-
+        
     def load_context(self, coin_id: str) -> dict:
         assert coin_id == "bitcoin"
         return {
@@ -42,19 +42,27 @@ class FakeFeatureLoader:
             "market_cap": 1_000_000.0,
             "volume": 50_000.0,
         }
+        
+class FakeLogger:
+    def __init__(self) -> None:
+        self.logged_events = []
+
+    def log(self, event: dict) -> None:
+        self.logged_events.append(event)
 
 
 def test_prediction_service_returns_prediction_response() -> None:
     service = PredictionService(
         model_loader=FakeModelLoader(),
         feature_loader=FakeFeatureLoader(),
+        logger=FakeLogger()
     )
 
     result = service.predict("bitcoin")
 
     assert result.coin_id == "bitcoin"
     assert result.timestamp == "2026-01-01 12:00:00"
-    assert result.prediciton == 1
+    assert result.prediction == 1
     assert result.direction == "up"
     assert result.probability_up == 0.75
     assert result.model_alias == "production"
@@ -79,11 +87,12 @@ def test_prediction_service_returns_down_when_probability_is_below_threshold(
     service = PredictionService(
         model_loader=FakeModelLoader(),
         feature_loader=FakeFeatureLoader(),
+        logger=FakeLogger()
     )
 
     result = service.predict("bitcoin")
 
-    assert result.prediciton == 0
+    assert result.prediction == 0
     assert result.direction == "down"
     assert result.probability_up == 0.25
 
@@ -109,6 +118,7 @@ def test_prediction_service_uses_requested_coin_id() -> None:
     service = PredictionService(
         model_loader=FakeModelLoader(),
         feature_loader=feature_loader,
+        logger=FakeLogger()
     )
 
     service.predict("ethereum")
@@ -128,6 +138,7 @@ def test_prediction_service_propagates_feature_loader_error() -> None:
     service = PredictionService(
         model_loader=FakeModelLoader(),
         feature_loader=BrokenFeatureLoader(),
+        logger=FakeLogger()
     )
 
     with pytest.raises(IndexError, match="coin not found"):
@@ -142,6 +153,7 @@ def test_prediction_service_propagates_model_loader_error() -> None:
     service = PredictionService(
         model_loader=BrokenModelLoader(),
         feature_loader=FakeFeatureLoader(),
+        logger=FakeLogger()
     )
 
     with pytest.raises(RuntimeError, match="model could not be loaded"):

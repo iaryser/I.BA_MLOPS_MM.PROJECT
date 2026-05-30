@@ -48,10 +48,11 @@ class FakePredictionService:
         return PredictionResponse(
             coin_id=coin_id,
             timestamp="2026-01-01 12:00:00",
-            prediciton=1,
+            prediction=1,
             direction="up",
             probability_up=0.75,
             model_alias="production",
+            model_version="v1",
         )
 
 
@@ -204,10 +205,11 @@ def test_predict_endpoint_returns_prediction(client, monkeypatch) -> None:
     assert response.json() == {
         "coin_id": "bitcoin",
         "timestamp": "2026-01-01 12:00:00",
-        "prediciton": 1,
+        "prediction": 1,
         "direction": "up",
         "probability_up": 0.75,
         "model_alias": "production",
+        "model_version": "v1"
     }
 
 
