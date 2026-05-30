@@ -10,10 +10,11 @@ class PredictionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     coin_id: str
     timestamp: str
-    prediciton: int
+    prediction: int
     direction: str
     probability_up: float
     model_alias: str
+    model_version: str
 
 
 class LoadedModel(BaseModel):

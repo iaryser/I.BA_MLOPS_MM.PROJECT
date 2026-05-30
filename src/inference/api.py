@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 
+from inference.inference_logger import InferenceLogger
 from inference.market_context_loader import MarketContextLoader
 from inference.model_loader import ModelLoader
 from inference.online_feature_loader import OnlineFeatureLoader
@@ -13,6 +14,9 @@ app = FastAPI(title="Crypto Direction Prediction API")
 
 ONLINE_FEATURE_PATH = os.getenv("ONLINE_FEATURE_PATH")
 MARKET_DATA_PATH = os.getenv("MARKET_DATA_PATH")
+LOG_DIR = os.getenv("LOG_DIR")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+
 
 online_feature_loader = OnlineFeatureLoader(data_path=ONLINE_FEATURE_PATH)
 market_data_loader = MarketContextLoader(data_path=MARKET_DATA_PATH)
@@ -24,8 +28,11 @@ model_loader = ModelLoader(
     model_name="xgboost_model",
 )
 
+
 prediction_service = PredictionService(
-    model_loader=model_loader, feature_loader=online_feature_loader
+    model_loader=model_loader,
+    feature_loader=online_feature_loader,
+    logger=InferenceLogger(BUCKET_NAME, "logs/inference"),
 )
 
 
