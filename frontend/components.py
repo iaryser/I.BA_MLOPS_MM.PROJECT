@@ -140,6 +140,8 @@ def render_prediction_card(prediction: PredictionResponse) -> None:
             st.metric("Probability down", f"{1 - prediction.probability_up:.1%}")
 
     with col4:
-        st.metric("Model version", prediction.model_alias)
+        st.metric(
+            "Model version", f"{prediction.model_alias}-{prediction.model_version}"
+        )
 
     st.caption(f"Prediction generated at {timestamp}")
