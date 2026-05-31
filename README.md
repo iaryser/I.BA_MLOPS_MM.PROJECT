@@ -4,7 +4,7 @@ This repository contains a cloud-ready MLOps system for predicting the short-ter
 
 The project was developed for the **I.BA_MLOPS_MM.F2601 Machine Learning Operations** module at HSLU during Spring Semester 2026.
 
-For a short project summary, see [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md).
+For a short project summary, see [PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md).
 
 Also, make sure to check out the deployed application: [https://crypto-prediction-frontend-200591620097.europe-west6.run.app/](https://crypto-prediction-frontend-200591620097.europe-west6.run.app/)
 
