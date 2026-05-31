@@ -46,3 +46,9 @@ jobs:
 
       - name: Run training pipeline
         run: uv run train-xgboost
+
+      - name: Restart API service to reload production model
+        run: |
+          gcloud run services update crypto-prediction-api \
+            --region=${{ vars.GCP_REGION }} \
+            --update-env-vars=MODEL_REFRESH_RUN_ID=${{ github.run_id }}
