@@ -1,0 +1,131 @@
+name: Deploy Cloud Run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: ${{ vars.GCP_REGION }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REPOSITORY: mlops-containers
+  API_SERVICE_NAME: crypto-prediction-api
+  FRONTEND_SERVICE_NAME: crypto-prediction-frontend
+  API_IMAGE_NAME: crypto-prediction-api
+  FRONTEND_IMAGE_NAME: crypto-prediction-frontend
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+
+    outputs:
+      api_url: ${{ steps.deploy-api.outputs.url }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker authentication
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build API image
+        run: |
+          docker build \
+            -f Dockerfile.api \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.API_IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.API_IMAGE_NAME }}:latest \
+            .
+
+      - name: Push API image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.API_IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.API_IMAGE_NAME }}:latest
+
+      - name: Deploy API to Cloud Run
+        id: deploy-api
+        run: |
+          gcloud run deploy ${{ env.API_SERVICE_NAME }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.API_IMAGE_NAME }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --service-account=${{ vars.GCP_SERVICE_ACCOUNT }} \
+            --set-env-vars=ONLINE_FEATURE_PATH=gs://${{ vars.GCS_BUCKET_NAME }}/online_store/online_features.parquet,MARKET_DATA_PATH=gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet,BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }},WANDB_ENTITY=${{ vars.WANDB_ENTITY }},WANDB_PROJECT=${{ vars.WANDB_PROJECT }} \
+            --set-secrets=WANDB_API_KEY=WANDB_API_KEY:latest
+
+          API_URL=$(gcloud run services describe ${{ env.API_SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+
+          echo "url=$API_URL" >> "$GITHUB_OUTPUT"
+
+  deploy-frontend:
+    needs: deploy-api
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker authentication
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Get API URL
+        id: api-url
+        run: |
+          if [ -n "${{ needs.deploy-api.outputs.api_url }}" ]; then
+            API_URL="${{ needs.deploy-api.outputs.api_url }}"
+          else
+            API_URL=$(gcloud run services describe ${{ env.API_SERVICE_NAME }} \
+              --region=${{ env.REGION }} \
+              --format='value(status.url)')
+          fi
+
+          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f Dockerfile.frontend \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest \
+            .
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+
+      - name: Deploy frontend to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.FRONTEND_SERVICE_NAME }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --service-account=${{ vars.GCP_SERVICE_ACCOUNT }} \
+            --set-env-vars=API_URL=${{ steps.api-url.outputs.api_url }}
