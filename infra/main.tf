@@ -11,6 +11,11 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.0"
     }
+
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.5"
+    }
   }
 }
 
@@ -27,16 +32,15 @@ locals {
   github_repo_full = "${var.github_owner}/${var.github_repository}"
 }
 
-data "google_project" "current" {
-  project_id = var.gcp_project_id
-}
-
 resource "google_project_service" "required_apis" {
   for_each = toset([
     "storage.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "run.googleapis.com",
+    "secretmanager.googleapis.com",
   ])
 
   project            = var.gcp_project_id
@@ -57,6 +61,15 @@ resource "google_storage_bucket" "mlops_bucket" {
   depends_on = [
     google_project_service.required_apis
   ]
+}
+
+resource "google_artifact_registry_repository" "mlops_containers" {
+  location      = var.gcp_region
+  repository_id = "mlops-containers"
+  format        = "DOCKER"
+  description   = "Docker images for MLOps Crypto project"
+
+  depends_on = [google_project_service.required_apis]
 }
 
 resource "google_service_account" "github_actions" {
@@ -107,6 +120,45 @@ resource "google_service_account_iam_member" "github_actions_workload_identity_u
   role               = "roles/iam.workloadIdentityUser"
 
   member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/${local.github_repo_full}"
+}
+
+resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
+  project = var.gcp_project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+resource "google_project_iam_member" "github_actions_run_admin" {
+  project = var.gcp_project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+resource "google_project_iam_member" "github_actions_service_account_user" {
+  project = var.gcp_project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+resource "google_secret_manager_secret" "wandb_api_key" {
+  secret_id = "WANDB_API_KEY"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.required_apis]
+}
+
+resource "google_secret_manager_secret_version" "wandb_api_key" {
+  secret      = google_secret_manager_secret.wandb_api_key.id
+  secret_data = var.wandb_api_key
+}
+
+resource "google_secret_manager_secret_iam_member" "runtime_wandb_secret_access" {
+  secret_id = google_secret_manager_secret.wandb_api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
 resource "github_actions_variable" "gcp_project_id" {
@@ -167,13 +219,15 @@ resource "local_sensitive_file" "env_file" {
   filename = "${path.module}/../.env"
 
   content = <<EOT
-  COINGECKO_API_KEY="${var.coingecko_api_key}"
+COINGECKO_API_KEY="${var.coingecko_api_key}"
 
-  WANDB_API_KEY="${var.wandb_api_key}"
-  WANDB_ENTITY="${var.wandb_entity}"
-  WANDB_PROJECT="${var.wandb_project}"
+WANDB_API_KEY="${var.wandb_api_key}"
+WANDB_ENTITY="${var.wandb_entity}"
+WANDB_PROJECT="${var.wandb_project}"
 
-  ONLINE_FEATURE_PATH="gs://${var.gcs_bucket_name}/online_store/online_features.parquet"
-  MARKET_DATA_PATH="gs://${var.gcs_bucket_name}/staging/market_data.parquet"
-  EOT
+ONLINE_FEATURE_PATH="gs://${google_storage_bucket.mlops_bucket.name}/online_store/online_features.parquet"
+MARKET_DATA_PATH="gs://${google_storage_bucket.mlops_bucket.name}/staging/market_data.parquet"
+
+BUCKET_NAME="${google_storage_bucket.mlops_bucket.name}"
+EOT
 }
