@@ -168,13 +168,14 @@ def client(tmp_path, monkeypatch):
 
     importlib.reload(api)
 
-    return TestClient(api.app), api
+    with TestClient(api.app) as test_client:
+        yield test_client, api
 
 
 def test_coins_endpoint_returns_available_coins(client, monkeypatch) -> None:
     test_client, api = client
 
-    monkeypatch.setattr(api, "online_feature_loader", FakeOnlineFeatureLoader())
+    test_client.app.state.online_feature_loader = FakeOnlineFeatureLoader()
 
     response = test_client.get("/coins")
 
@@ -185,7 +186,7 @@ def test_coins_endpoint_returns_available_coins(client, monkeypatch) -> None:
 def test_top5_coins_endpoint_returns_top_coins(client, monkeypatch) -> None:
     test_client, api = client
 
-    monkeypatch.setattr(api, "online_feature_loader", FakeOnlineFeatureLoader())
+    test_client.app.state.online_feature_loader = FakeOnlineFeatureLoader()
 
     response = test_client.get("/top5_coins")
 
@@ -199,7 +200,7 @@ def test_top5_coins_endpoint_returns_top_coins(client, monkeypatch) -> None:
 def test_coin_context_endpoint_returns_context_data(client, monkeypatch) -> None:
     test_client, api = client
 
-    monkeypatch.setattr(api, "market_data_loader", FakeMarketDataLoader())
+    test_client.app.state.market_data_loader = FakeMarketDataLoader()
 
     response = test_client.get("/coin_context?coin_id=bitcoin&n_days=7")
 
@@ -217,7 +218,7 @@ def test_coin_context_endpoint_returns_context_data(client, monkeypatch) -> None
 
 def test_predict_endpoint_returns_prediction(client, monkeypatch) -> None:
     test_client, api = client
-    monkeypatch.setattr(api, "prediction_service", FakePredictionService())
+    test_client.app.state.prediction_service = FakePredictionService()
 
     response = test_client.post(
         "/predict",
@@ -246,14 +247,14 @@ def test_predict_endpoint_rejects_missing_coin_id(client) -> None:
     assert response.status_code == 422
 
 
-def test_reload_data_endpoint_reloads_both_loaders(client, monkeypatch) -> None:
-    test_client, api = client
+def test_reload_data_endpoint_reloads_both_loaders(client) -> None:
+    test_client, _ = client
 
     fake_online_loader = FakeOnlineFeatureLoader()
     fake_market_loader = FakeMarketDataLoader()
 
-    monkeypatch.setattr(api, "online_feature_loader", fake_online_loader)
-    monkeypatch.setattr(api, "market_data_loader", fake_market_loader)
+    test_client.app.state.online_feature_loader = fake_online_loader
+    test_client.app.state.market_data_loader = fake_market_loader
 
     response = test_client.get("/reload-data")
 
