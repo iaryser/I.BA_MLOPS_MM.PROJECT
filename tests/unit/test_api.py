@@ -1,4 +1,5 @@
 import importlib
+from datetime import UTC, datetime
 
 import pandas as pd
 import pytest
@@ -247,7 +248,25 @@ def test_predict_endpoint_rejects_missing_coin_id(client) -> None:
     assert response.status_code == 422
 
 
-def test_reload_data_endpoint_reloads_both_loaders(client) -> None:
+def test_coins_endpoint_reloads_data_when_cache_is_stale(client) -> None:
+    test_client, api = client
+
+    fake_online_loader = FakeOnlineFeatureLoader()
+    fake_market_loader = FakeMarketDataLoader()
+
+    test_client.app.state.online_feature_loader = fake_online_loader
+    test_client.app.state.market_data_loader = fake_market_loader
+    test_client.app.state.data_loaded_at = datetime.now(UTC) - api.DATA_CACHE_TTL
+
+    response = test_client.get("/coins")
+
+    assert response.status_code == 200
+    assert response.json() == ["bitcoin", "ethereum"]
+    assert fake_online_loader.reloaded is True
+    assert fake_market_loader.reloaded is True
+
+
+def test_coins_endpoint_does_not_reload_data_when_cache_is_fresh(client) -> None:
     test_client, _ = client
 
     fake_online_loader = FakeOnlineFeatureLoader()
@@ -255,10 +274,11 @@ def test_reload_data_endpoint_reloads_both_loaders(client) -> None:
 
     test_client.app.state.online_feature_loader = fake_online_loader
     test_client.app.state.market_data_loader = fake_market_loader
+    test_client.app.state.data_loaded_at = datetime.now(UTC)
 
-    response = test_client.get("/reload-data")
+    response = test_client.get("/coins")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "reloaded"}
-    assert fake_online_loader.reloaded is True
-    assert fake_market_loader.reloaded is True
+    assert response.json() == ["bitcoin", "ethereum"]
+    assert fake_online_loader.reloaded is False
+    assert fake_market_loader.reloaded is False

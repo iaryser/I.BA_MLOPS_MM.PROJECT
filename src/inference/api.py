@@ -1,5 +1,6 @@
 import os
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 
 from fastapi import FastAPI, Request
 
@@ -12,8 +13,9 @@ from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
 
 ONLINE_FEATURE_PATH = os.getenv("ONLINE_FEATURE_PATH")
 MARKET_DATA_PATH = os.getenv("MARKET_DATA_PATH")
-LOG_DIR = os.getenv("LOG_DIR")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+
+DATA_CACHE_TTL = timedelta(hours=1)
 
 
 @asynccontextmanager
@@ -35,6 +37,8 @@ async def lifespan(app: FastAPI):
         logger=InferenceLogger(BUCKET_NAME, "logs/inference"),
     )
 
+    app.state.data_loaded_at = datetime.now(UTC)
+
     yield
 
 
@@ -44,6 +48,17 @@ app = FastAPI(
 )
 
 
+def refresh_data_if_stale(app: FastAPI) -> None:
+    loaded_at = app.state.data_loaded_at
+
+    if datetime.now(UTC) - loaded_at < DATA_CACHE_TTL:
+        return
+
+    app.state.online_feature_loader.reload()
+    app.state.market_data_loader.reload()
+    app.state.data_loaded_at = datetime.now(UTC)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -51,16 +66,19 @@ def health() -> dict[str, str]:
 
 @app.get("/coins")
 def get_coins(request: Request) -> list[str]:
+    refresh_data_if_stale(request.app)
     return request.app.state.online_feature_loader.get_available_coins()
 
 
 @app.get("/top5_coins")
 def get_top5_coins(request: Request) -> list[TopCoin]:
+    refresh_data_if_stale(request.app)
     return request.app.state.online_feature_loader.load_top5_coins()
 
 
 @app.get("/coin_context")
 def get_coin_metadata(request: Request, coin_id: str, n_days: int) -> list[dict]:
+    refresh_data_if_stale(request.app)
     return request.app.state.market_data_loader.load_coin_context_data(
         coin_id=coin_id, n_days=n_days
     )
@@ -68,11 +86,5 @@ def get_coin_metadata(request: Request, coin_id: str, n_days: int) -> list[dict]
 
 @app.post("/predict")
 def predict(request: Request, req: PredictionRequest) -> PredictionResponse:
+    refresh_data_if_stale(request.app)
     return request.app.state.prediction_service.predict(req.coin_id)
-
-
-@app.get("/reload-data")
-def reload_data(request: Request) -> dict[str, str]:
-    request.app.state.online_feature_loader.reload()
-    request.app.state.market_data_loader.reload()
-    return {"status": "reloaded"}
