@@ -1,10 +1,11 @@
+import os
+
 import pandas as pd
 import requests
 
 from inference.schemas import PredictionRequest, PredictionResponse, TopCoin
 
-API_URL = "http://127.0.0.1:8000"
-
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 HEALTH_URL = f"{API_URL}/health"
 COINS_URL = f"{API_URL}/coins"
 TOP5_URL = f"{API_URL}/top5_coins"
