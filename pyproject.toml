@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.scripts]
-update-coin-universe = "utils.extract_supported_coins:main"
+update-coin-universe = "feature_pipeline.ingestion.update_coin_universe:main"
 feature-batch = "feature_pipeline.batch_pipeline:run_batch_pipeline"
 feature-backfill = "feature_pipeline.backfill_pipeline:run_backfill_pipeline"
 train-xgboost = "training_pipeline.train_xgboost:main"
