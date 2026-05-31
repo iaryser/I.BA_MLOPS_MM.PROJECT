@@ -8,6 +8,16 @@ on:
         required: false
         default: "100"
         type: number
+      currency:
+        description: "Currency of the fetched coin Data"
+        required: false
+        default: "chf"
+        type: string
+      n_days:
+        description: "Number of days the backfill should be executed for"
+        required: false
+        default: 365
+        type: number
 
 permissions:
   contents: read
@@ -19,6 +29,9 @@ jobs:
 
     env:
       COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+      N_COINS: ${{ inputs.n_coins }}
+      CURRENCY: ${{ inputs.currency }}
+      N_DAYS: ${{ inputs.n_days }}
 
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +59,8 @@ jobs:
           gcloud storage cp gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet data/staging/market_data.parquet || true
          
       - name: Run backfill feature pipeline
-        run: uv run feature-backfill --n-coins ${{ inputs.n_coins || '100' }}
+        run: uv run feature-backfill --n-coins "$N_COINS" --currency "$CURRENCY" --n-days "$N_DAYS"
+
 
       - name: Upload updated data to GCS
         run: |

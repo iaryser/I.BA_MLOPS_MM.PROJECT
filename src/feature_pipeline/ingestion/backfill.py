@@ -21,16 +21,18 @@ headers = {"x-cg-demo-api-key": API_KEY}
 
 RAW_BACKFILL_DIR = Path("data/raw/backfill")
 
-BACKFILL_DAYS = 365
 
+def backfill_coin_data(n_coins: int, currency: str, n_days: int) -> None:
 
-def backfill_coin_data(n_coins: int, currency: str) -> None:
+    if n_days < 1:
+        raise ValueError("Backfill days have to be greater than 0!")
+
     RAW_BACKFILL_DIR.mkdir(parents=True, exist_ok=True)
 
     client = CoinGeckoClient(base_url=BASE_URL, endpoint=ENDPOINT)
 
     ending_date = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
-    starting_date = ending_date - timedelta(days=BACKFILL_DAYS)
+    starting_date = ending_date - timedelta(days=n_days)
 
     chunks = client.build_chunks(starting_date, ending_date)
 
@@ -65,8 +67,8 @@ def backfill_coin_data(n_coins: int, currency: str) -> None:
                 json.dump(data, f, indent=2)
 
     print(
-        f"Successfully fetched hourly data of the last year for "
-        f"{len(coin_ids)} crypto-coins"
+        f"Successfully fetched hourly data of the last {n_days} days for"
+        f" {len(coin_ids)} crypto-coins"
     )
 
 

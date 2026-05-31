@@ -23,9 +23,16 @@ from feature_pipeline.transforms.calculate_features import build_offline_feature
     type=str,
     help="Currency of Coin-Data",
 )
-def run_backfill_pipeline(n_coins: int, currency: str) -> None:
+@click.option(
+    "--n-days",
+    default=365,
+    show_default=True,
+    type=int,
+    help="Number of days to fetch from API",
+)
+def run_backfill_pipeline(n_coins: int, currency: str, n_days: int) -> None:
     print(f"Step 1/4 backfilling raw CoinGecko Data for {n_coins} coins")
-    backfill_coin_data(n_coins=n_coins, currency=currency)
+    backfill_coin_data(n_coins=n_coins, currency=currency, n_days=n_days)
 
     print("Step 2/4 Building staging market table")
     build_staging_table(source="backfill")
