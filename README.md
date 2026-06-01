@@ -1,12 +1,13 @@
 # Cryptocurrency Price Direction Prediction System
 
-This repository contains a cloud-ready MLOps system for predicting the short-term price direction of cryptocurrencies. It uses dynamic market data from the CoinGecko API, computes time-series features for a configurable coin universe, trains an XGBoost classifier, tracks model artifacts with Weights & Biases, and serves predictions through a deployed FastAPI and Streamlit application.
+This repository contains a cloud-ready MLOps system for predicting the short-term price direction of cryptocurrencies. It uses live market data from the CoinGecko API, computes time-series features for a configurable coin universe, trains an XGBoost classifier, tracks model artifacts with Weights & Biases, and serves predictions through a deployed FastAPI and Streamlit application.
 
 The project was developed for the **I.BA_MLOPS_MM.F2601 Machine Learning Operations** module at HSLU during Spring Semester 2026.
 
 For a short project summary, see [PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md).
 
-Also, make sure to check out the deployed application: [https://crypto-prediction-frontend-200591620097.europe-west6.run.app/](https://crypto-prediction-frontend-200591620097.europe-west6.run.app/)
+Also, make sure to check out the deployed application:
+[https://crypto-prediction-frontend-200591620097.europe-west6.run.app/](https://crypto-prediction-frontend-200591620097.europe-west6.run.app/)
 
 ---
 
@@ -116,6 +117,9 @@ Install the following tools locally:
 - Terraform >= 1.6
 - Google Cloud CLI
 - GitHub CLI
+
+You will also need:
+
 - A Google Cloud project with billing enabled 
 - A CoinGecko API key [https://www.coingecko.com/en/api/pricing](https://www.coingecko.com/en/api/pricing)
 - A Weights & Biases account and API key [https://docs.wandb.ai/models/quickstart](https://docs.wandb.ai/models/quickstart)
@@ -151,7 +155,7 @@ cd infra
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Fill in your own values.
+Fill in your own values in terraform.tfvars.
 
 To get a CoinGecko API key, register on: 
 [https://www.coingecko.com/en/api/pricing](https://www.coingecko.com/en/api/pricing)
@@ -210,6 +214,8 @@ Terraform creates the required cloud and repository configuration:
 - Secret Manager secret for the W&B API key
 - required Google Cloud APIs
 
+It will also create a `.env` file.
+
 ---
 
 ### 5. Run the workflows
@@ -235,7 +241,67 @@ After setting up Terraform, run the workflows in this order:
 4. **Deploy Cloud Run**
    - deploys the FastAPI backend and Streamlit frontend
 
+
 ---
+
+## Local Development
+
+Install dependencies:
+
+```bash
+uv sync --dev
+```
+
+Run quality checks and tests:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+```
+
+Available project commands:
+
+```bash
+uv run feature-backfill --n-coins 100 --currency chf --n-days 365
+uv run feature-batch --n-coins 100
+uv run train-xgboost
+```
+
+Terraform creates the root-level `.env` file used by the local Docker Compose setup.
+
+### Local Docker Compose note
+
+The included `docker-compose.yaml` is configured for Windows because it mounts the local Google application-default credentials file from:
+
+```text
+${APPDATA}/gcloud/application_default_credentials.json
+```
+
+If you are using Linux or macOS, replace that volume mount with:
+
+```yaml
+- ${HOME}/.config/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json:ro
+```
+
+Before running the containers locally, authenticate once with Google Cloud (if not done already):
+
+```bash
+gcloud auth application-default login
+```
+
+Then start the API and frontend:
+
+```bash
+docker compose up --build -d
+```
+
+Local URLs:
+
+- FastAPI docs: http://localhost:8000/docs
+- API health check: http://localhost:8000/health
+- Streamlit frontend: http://localhost:8501
+
 
 ## Author
 
