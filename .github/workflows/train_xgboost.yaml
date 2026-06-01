@@ -47,7 +47,19 @@ jobs:
       - name: Run training pipeline
         run: uv run train-xgboost
 
+      - name: Check whether API service exists
+        id: api-service
+        run: |
+          if gcloud run services describe crypto-prediction-api \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(metadata.name)" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Restart API service to reload production model
+        if: ${{ steps.api-service.outputs.exists == 'true' }}
         run: |
           gcloud run services update crypto-prediction-api \
             --region=${{ vars.GCP_REGION }} \
