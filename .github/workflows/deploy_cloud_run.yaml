@@ -64,6 +64,8 @@ jobs:
             --allow-unauthenticated \
             --service-account=${{ vars.GCP_SERVICE_ACCOUNT }} \
             --memory=1Gi \
+            --min-instances=1 \
+            --startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=0,failureThreshold=24,timeoutSeconds=5,periodSeconds=5 \
             --set-env-vars=ONLINE_FEATURE_PATH=gs://${{ vars.GCS_BUCKET_NAME }}/online_store/online_features.parquet,MARKET_DATA_PATH=gs://${{ vars.GCS_BUCKET_NAME }}/staging/market_data.parquet,BUCKET_NAME=${{ vars.GCS_BUCKET_NAME }},WANDB_ENTITY=${{ vars.WANDB_ENTITY }},WANDB_PROJECT=${{ vars.WANDB_PROJECT }} \
             --set-secrets=WANDB_API_KEY=WANDB_API_KEY:latest
 
@@ -129,4 +131,5 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --service-account=${{ vars.GCP_SERVICE_ACCOUNT }} \
+            --memory=512Mi \
             --set-env-vars=API_URL=${{ steps.api-url.outputs.api_url }}
