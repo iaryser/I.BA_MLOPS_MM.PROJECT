@@ -1,12 +1,12 @@
 # Cryptocurrency Price Direction Prediction System
 
-This repository contains a cloud-ready MLOps system for predicting the short-term price direction of cryptocurrencies. It uses live market data from the CoinGecko API, computes time-series features for a configurable coin universe, trains an XGBoost classifier, tracks model artifacts with Weights & Biases, and serves predictions through a deployed FastAPI and Streamlit application.
+This repository contains a cloud-ready MLOps system for predicting the short-term price direction of cryptocurrencies. 
 
 The project was developed for the **I.BA_MLOPS_MM.F2601 Machine Learning Operations** module at HSLU during Spring Semester 2026.
 
-For a short project summary, see [PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md).
+For a short project summary, click [here](docs/PROJECT_SUMMARY.md).
 
-Also, make sure to check out the deployed application:
+Also, make sure to check out the Deployed Application: 
 [https://crypto-prediction-frontend-200591620097.europe-west6.run.app/](https://crypto-prediction-frontend-200591620097.europe-west6.run.app/)
 
 ---
@@ -70,26 +70,6 @@ Also, make sure to check out the deployed application:
 
 ---
 
-## Data and Features
-
-Raw market data is fetched from the **CoinGecko API**. The pipeline uses price, market capitalization, trading volume, timestamps, and coin identifiers to build time-series features.
-
-Generated features include several groups of time-series indicators:
-
-| Feature group | Description |
-|---|---|
-| Returns | Short-term percentage price changes over multiple lookback windows |
-| Moving-average deviations | Distance between the current price and recent rolling averages |
-| Volatility | Rolling standard deviation of recent returns |
-| Normalized momentum | Return-based momentum scaled by recent volatility |
-| Volume dynamics | Log-volume changes over multiple lookback windows |
-| Liquidity ratio | Trading volume normalized by market capitalization |
-| Target | Binary label indicating whether the future price increased |
-
-The offline feature table is used for model training. The online feature table stores the latest feature row per coin for low-latency inference.
-
----
-
 
 ## Automation Workflows
 
@@ -114,15 +94,15 @@ Install the following tools locally:
 - Python 3.14
 - uv
 - Docker
-- Terraform >= 1.6
-- Google Cloud CLI
-- GitHub CLI
+- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.6 
+- [Google Cloud CLI](https://docs.cloud.google.com/sdk/docs/install-sdk?hl=de)
+- [GitHub CLI](https://cli.github.com/)
 
 You will also need:
 
-- A Google Cloud project with billing enabled 
-- A CoinGecko API key [https://www.coingecko.com/en/api/pricing](https://www.coingecko.com/en/api/pricing)
-- A Weights & Biases account and API key [https://docs.wandb.ai/models/quickstart](https://docs.wandb.ai/models/quickstart)
+- A Google Cloud account with billing enabled
+- A [CoinGecko](https://www.coingecko.com/en/api/pricing) API key
+- A [Weights & Biases](https://docs.wandb.ai/models/quickstart) account and API key 
 
 ---
 
@@ -146,35 +126,53 @@ cd <your-repository-name>
 ```
 --- 
 
-### 2. Configure Terraform variables
+### 2. Create a Google Cloud project
 
-Go into the infrastructure folder:
+Create a new Google Cloud project and enable billing for it.
+
+Note down the project ID, because you will need it for `terraform.tfvars`.
+
+The easiest setup is to use a project where your Google account has Owner permissions.
+
+Authenticate locally and set the active project:
+
+```bash
+gcloud auth application-default login
+gcloud config set project <your-gcp-project-id>
+```
+
+---
+
+### 3. Configure Terraform variables
+
+Go into the infrastructure folder and create your local Terraform variable file:
 
 ```bash
 cd infra
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Fill in your own values in terraform.tfvars.
+Open `terraform.tfvars` and replace the placeholder values with your own configuration:
 
-To get a CoinGecko API key, register on: 
-[https://www.coingecko.com/en/api/pricing](https://www.coingecko.com/en/api/pricing)
+| Variable | Description |
+|---|---|
+| `gcp_project_id` | Your Google Cloud project ID |
+| `gcs_bucket_name` | A globally unique Google Cloud Storage bucket name, for example `<your-project-id>-crypto-mlops-data` |
+| `github_owner` | Your GitHub username or organization name |
+| `github_repository` | The repository name only, not the full GitHub URL |
+| `wandb_entity` | Your Weights & Biases username or team name |
+| `wandb_project` | The Weights & Biases project name used for experiment tracking and model artifacts |
+| `coingecko_api_key` | Your CoinGecko API key |
+| `wandb_api_key` | Your Weights & Biases API key |
 
-To get a Weights & Biases API key, register on:
-[https://docs.wandb.ai/models/quickstart](https://docs.wandb.ai/models/quickstart)
 
-You will need to create an account for this.
+You can get a CoinGecko API key from [CoinGecko](https://www.coingecko.com/en/api/pricing).
+
+You can get a Weights & Biases API key from [Weights & Biases](https://docs.wandb.ai/models/quickstart).
 
 ---
 
-### 3. Authenticate locally
-
-Authenticate with Google Cloud:
-
-```bash
-gcloud auth application-default login
-gcloud config set project <your-gcp-project-id>
-```
+### 4. Authenticate with GitHub
 
 Authenticate with GitHub CLI:
 
@@ -192,14 +190,32 @@ export GITHUB_TOKEN=$(gh auth token)
 ```powershell
 $env:GITHUB_TOKEN = gh auth token
 ```
+
+For private repositories, make sure your GitHub CLI authentication has permission to manage repository Actions secrets and variables. If needed, refresh the token scopes with:
+
+```bash
+gh auth refresh -s repo
+```
+
 ---
 
-### 4. Apply Terraform
+### 5. Apply Terraform
 
+**Initialize terraform**
 
 ```bash
 terraform init
+```
+
+**Preview the infrastructure changes**
+
+```bash
 terraform plan
+```
+
+**Apply the infrastructure changes**
+
+```bash
 terraform apply
 ```
 
@@ -218,29 +234,32 @@ It will also create a `.env` file.
 
 ---
 
-### 5. Run the workflows
+### 6. Run the workflows
 
-After setting up Terraform, run the workflows in this order:
+After Terraform has finished, open your GitHub repository and go to the **Actions** tab.
+
+Run the workflows in this order:
 
 1. **Feature Backfill**
-   - creates the initial historical feature store
-   - required before training and inference
+   - Run this workflow manually first.
+   - It creates the initial historical raw data, staging table, offline feature table, and online feature table.
+   - This is required before model training and inference can work.
 
 2. **Train XGBoost Classifier Model**
-   - trains and registers the first model in W&B
+   - Run this workflow manually after the backfill has completed.
+   - It trains the first model and registers the production model artifact in Weights & Biases.
 
-3. **Batch Feature Refresh**
-   - updates the online feature table with current features
+3. **Deploy Cloud Run**
+   - Run this workflow manually after the first model has been registered.
+   - It builds and deploys the FastAPI backend and Streamlit frontend to Google Cloud Run.
 
-   After this you could already run the api & streamlit app locally with:
+4. **Batch Feature Refresh**
+   - This workflow keeps the feature store up to date.
+   - It can be run manually, but it is mainly intended to run on its hourly schedule.
 
-   ```bash
-   docker compose up --build -d
-   ```
+The scheduled workflows only run if GitHub Actions are enabled for the repository. If GitHub shows a workflow as disabled, enable it from the **Actions** tab. 
 
-4. **Deploy Cloud Run**
-   - deploys the FastAPI backend and Streamlit frontend
-
+After the backfill and first training run have completed, you can also run the API and Streamlit app locally. See [Local Development](#local-development).
 
 ---
 
@@ -263,12 +282,11 @@ uv run pytest
 Available project commands:
 
 ```bash
+uv run update-coin-universe
 uv run feature-backfill --n-coins 100 --currency chf --n-days 365
 uv run feature-batch --n-coins 100
 uv run train-xgboost
 ```
-
-Terraform creates the root-level `.env` file used by the local Docker Compose setup.
 
 ### Local Docker Compose note
 
