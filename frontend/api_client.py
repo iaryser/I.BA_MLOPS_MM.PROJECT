@@ -15,7 +15,7 @@ PREDICT_URL = f"{API_URL}/predict"
 
 def check_server_health() -> bool:
     try:
-        res = requests.get(HEALTH_URL, timeout=5)
+        res = requests.get(HEALTH_URL, timeout=30)
         res.raise_for_status()
         return res.json().get("status") == "ok"
     except requests.RequestException:
