@@ -47,6 +47,13 @@ def main() -> None:
     if st.button("Predict direction"):
         prediction = predict_coin(selected_coin)
 
+        st.warning(
+            "Educational use only. This prediction is not financial advice  "
+            "and should not be used as the sole basis for trading or investment "
+            "decisions. Crypto markets are volatile and model predictions "
+            "may be wrong."
+        )
+
         render_prediction_card(prediction)
 
 
