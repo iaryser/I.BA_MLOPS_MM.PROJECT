@@ -228,6 +228,7 @@ WANDB_PROJECT="${var.wandb_project}"
 ONLINE_FEATURE_PATH="gs://${google_storage_bucket.mlops_bucket.name}/online_store/online_features.parquet"
 MARKET_DATA_PATH="gs://${google_storage_bucket.mlops_bucket.name}/staging/market_data.parquet"
 
+GOOGLE_CLOUD_PROJECT="${var.gcp_project_id}"
 BUCKET_NAME="${google_storage_bucket.mlops_bucket.name}"
 EOT
 }
