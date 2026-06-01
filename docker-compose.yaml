@@ -7,12 +7,8 @@ services:
       - "8000:8080"
     env_file:
       - .env
-    environment:
-      GOOGLE_APPLICATION_CREDENTIALS: /gcp/application_default_credentials.json
-      GOOGLE_CLOUD_PROJECT: mlops-496411
     volumes:
-      - ./data:/app/data
-      - ${APPDATA}/gcloud/application_default_credentials.json:/gcp/application_default_credentials.json:ro
+      - ${APPDATA}/gcloud/application_default_credentials.json:/root/.config/gcloud/application_default_credentials.json:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 30s
