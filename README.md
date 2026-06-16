@@ -6,9 +6,6 @@ The project was developed for the **I.BA_MLOPS_MM.F2601 Machine Learning Operati
 
 For a short project summary, click [here](docs/PROJECT_SUMMARY.md).
 
-Also, make sure to check out the Deployed Application: 
-[https://crypto-prediction-frontend-200591620097.europe-west6.run.app/](https://crypto-prediction-frontend-200591620097.europe-west6.run.app/)
-
 ---
 
 ## Tech Stack
