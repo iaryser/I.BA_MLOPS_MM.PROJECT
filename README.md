@@ -88,16 +88,16 @@ The project uses GitHub Actions to automate testing, feature generation, model t
 
 Install the following tools locally: 
 
-- Python 3.14
-- uv
-- Docker
+- Python 3.14 
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [Docker](https://www.docker.com/products/docker-desktop/)
 - [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.6 
 - [Google Cloud CLI](https://docs.cloud.google.com/sdk/docs/install-sdk?hl=de)
 - [GitHub CLI](https://cli.github.com/)
 
 You will also need:
 
-- A Google Cloud account with billing enabled
+- A [Google Cloud account](https://cloud.google.com/) with billing enabled
 - A [CoinGecko](https://www.coingecko.com/en/api/pricing) API key
 - A [Weights & Biases](https://docs.wandb.ai/models/quickstart) account and API key 
 
